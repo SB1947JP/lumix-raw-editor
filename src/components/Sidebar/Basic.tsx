@@ -20,6 +20,7 @@ export function Basic({ image }: Props) {
     set('shadows', 0);
     set('whites', 0);
     set('blacks', 0);
+    set('brightness', 0);
   };
 
   return (
@@ -31,6 +32,7 @@ export function Basic({ image }: Props) {
         Auto Levels
       </button>
       <SliderRow label="Exposure" value={params.exposure} min={-5} max={5} step={0.05} onChange={(v) => set('exposure', v)} />
+      <SliderRow label="Brightness" value={params.brightness} min={-100} max={100} onChange={(v) => set('brightness', v)} />
       <SliderRow label="Contrast" value={params.contrast} min={-100} max={100} onChange={(v) => set('contrast', v)} />
     </Section>
   );

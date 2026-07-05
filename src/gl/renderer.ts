@@ -49,7 +49,7 @@ function toRgba8(image: DecodedImage): Uint8Array {
 }
 
 const UNIFORM_NAMES = [
-  'uImage', 'uTexelSize', 'uExposure', 'uContrast', 'uHighlights', 'uShadows',
+  'uImage', 'uTexelSize', 'uExposure', 'uBrightness', 'uContrast', 'uHighlights', 'uShadows',
   'uWhites', 'uBlacks', 'uTemperature', 'uTint', 'uSaturation', 'uVibrance',
   'uSharpen', 'uCropScale', 'uCropOffset', 'uRotation',
 ] as const;
@@ -159,6 +159,7 @@ export class RawRenderer {
     gl.uniform2f(this.uniforms.uTexelSize!, 1 / this.imageWidth, 1 / this.imageHeight);
 
     gl.uniform1f(this.uniforms.uExposure!, params.exposure);
+    gl.uniform1f(this.uniforms.uBrightness!, params.brightness);
     gl.uniform1f(this.uniforms.uContrast!, params.contrast);
     gl.uniform1f(this.uniforms.uHighlights!, params.highlights);
     gl.uniform1f(this.uniforms.uShadows!, params.shadows);

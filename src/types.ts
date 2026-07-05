@@ -32,6 +32,7 @@ export interface CropRect {
 
 export interface EditParams {
   exposure: number; // stops, -5..5
+  brightness: number; // -100..100
   contrast: number; // -100..100
   highlights: number; // -100..100
   shadows: number; // -100..100
@@ -48,6 +49,7 @@ export interface EditParams {
 
 export const DEFAULT_EDIT_PARAMS: EditParams = {
   exposure: 0,
+  brightness: 0,
   contrast: 0,
   highlights: 0,
   shadows: 0,
