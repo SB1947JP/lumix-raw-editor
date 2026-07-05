@@ -1,39 +1,53 @@
+import { useState } from 'react';
+import { JAPANESE_PALETTE } from '../lib/palette';
+
 interface Props {
   before: Uint32Array | null;
   after: Uint32Array | null;
 }
 
-function Chart({ buckets }: { buckets: Uint32Array | null }) {
-  if (!buckets) {
-    return <div className="h-16 w-full rounded bg-neutral-950" />;
-  }
+type Mode = 'before' | 'after';
 
-  const max = Math.max(1, ...buckets);
-  const points = Array.from(buckets)
-    .map((count, i) => {
-      const x = (i / 255) * 100;
-      const y = 100 - (count / max) * 100;
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-16 w-full rounded bg-neutral-950">
-      <polyline points={`0,100 ${points} 100,100`} fill="rgba(228,228,231,0.35)" stroke="none" />
-    </svg>
-  );
-}
+const COLORS: Record<Mode, string> = {
+  before: JAPANESE_PALETTE.shuiro,
+  after: JAPANESE_PALETTE.asagiiro,
+};
 
 export function Histogram({ before, after }: Props) {
+  const [mode, setMode] = useState<Mode>('after');
+  const buckets = mode === 'before' ? before : after;
+  const color = COLORS[mode];
+
+  const max = buckets ? Math.max(1, ...buckets) : 1;
+  const points = buckets
+    ? Array.from(buckets)
+        .map((count, i) => `${(i / 255) * 100},${100 - (count / max) * 100}`)
+        .join(' ')
+    : '';
+
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <div>
-        <Chart buckets={before} />
-        <div className="text-[10px] uppercase tracking-wide text-neutral-600 mt-1 text-center">Before</div>
-      </div>
-      <div>
-        <Chart buckets={after} />
-        <div className="text-[10px] uppercase tracking-wide text-neutral-600 mt-1 text-center">After</div>
+    <div>
+      {buckets ? (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-16 w-full rounded bg-neutral-950">
+          <polyline points={`0,100 ${points} 100,100`} fill={color} fillOpacity={0.45} stroke="none" />
+        </svg>
+      ) : (
+        <div className="h-16 w-full rounded bg-neutral-950" />
+      )}
+      <div className="flex mt-1 gap-1">
+        {(['before', 'after'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            className="flex-1 py-0.5 rounded text-[10px] uppercase tracking-wide font-medium"
+            style={{
+              color: mode === m ? COLORS[m] : '#71717a',
+              backgroundColor: mode === m ? `${COLORS[m]}22` : 'transparent',
+            }}
+          >
+            {m}
+          </button>
+        ))}
       </div>
     </div>
   );

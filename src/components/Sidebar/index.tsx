@@ -20,7 +20,7 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
   const canUndo = useEditParams((s) => s.history.length > 0);
 
   return (
-    <div className="w-72 shrink-0 h-full overflow-y-auto bg-neutral-900 border-l border-neutral-800 p-4">
+    <div className="w-full sm:w-72 shrink-0 h-[45vh] sm:h-full overflow-y-auto bg-neutral-900 border-t sm:border-t-0 sm:border-l border-neutral-800 p-3 sm:p-4">
       <div className="mb-4">
         <Histogram before={originalHistogram} after={histogram} />
       </div>

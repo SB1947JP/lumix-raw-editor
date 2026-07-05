@@ -3,11 +3,12 @@ import type { LibRawImageData, Metadata } from 'libraw-wasm';
 import { DecodedImage, RawMetadata } from '../types';
 
 const BASE_SETTINGS = {
-  useCameraWb: true,
+  useCameraWb: true, // as-shot white balance, not an auto-computed guess
+  useCameraMatrix: 3, // always prefer the camera's own embedded colour matrix over LibRaw's generic fallback
   outputBps: 16,
   outputColor: 1, // sRGB
-  highlight: 0,
-  noAutoBright: true,
+  highlight: 0, // clip rather than reconstruct/invent highlight data
+  noAutoBright: true, // no automatic exposure "improvement" — faithful to the as-shot exposure
 } as const;
 
 function toDecodedImage(img: LibRawImageData): DecodedImage {

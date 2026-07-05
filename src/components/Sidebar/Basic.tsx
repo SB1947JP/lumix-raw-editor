@@ -2,6 +2,7 @@ import { useEditParams } from '../../state/editParams';
 import { SliderRow } from '../SliderRow';
 import { Section } from './Section';
 import { computeAutoLevels } from '../../lib/autoLevels';
+import { JAPANESE_PALETTE } from '../../lib/palette';
 import { DecodedImage } from '../../types';
 
 interface Props {
@@ -24,7 +25,7 @@ export function Basic({ image }: Props) {
   };
 
   return (
-    <Section title="Basic">
+    <Section title="Basic" color={JAPANESE_PALETTE.shuiro}>
       <button
         onClick={handleAutoLevels}
         className="mb-3 w-full text-xs text-neutral-300 border border-neutral-700 rounded py-1.5 hover:bg-neutral-800"

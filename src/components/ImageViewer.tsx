@@ -38,6 +38,7 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
   const beginChange = useEditParams((s) => s.beginChange);
   const ratio = useCropTool((s) => s.ratio);
   const orientation = useCropTool((s) => s.orientation);
+  const setAutoRotationCrop = useCropTool((s) => s.setAutoRotationCrop);
 
   // Reset the view whenever a new image is loaded.
   useEffect(() => {
@@ -63,10 +64,14 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
   const scale = zoomMode.kind === 'fit' ? fitScale : zoomMode.scale;
   const cssWidth = image.width * scale;
   const cssHeight = image.height * scale;
-  // Center whenever the content actually fits without scrolling; a centered
-  // flex container can't be scrolled into its "negative" overflow region, so
-  // once content is bigger than the viewport it must be top-left anchored.
-  const fitsInContainer = cssWidth <= containerSize.width + 0.5 && cssHeight <= containerSize.height + 0.5;
+  // Center each axis independently whenever that axis's content fits without
+  // scrolling — a centered flex axis can't be scrolled into its "negative"
+  // overflow region, so once an axis overflows it must be top/left anchored.
+  // Treating this as one all-or-nothing flag (instead of per-axis) is what
+  // caused portrait images at in-between zoom levels — width fits, height
+  // overflows — to lose horizontal centering entirely.
+  const fitsX = cssWidth <= containerSize.width + 0.5;
+  const fitsY = cssHeight <= containerSize.height + 0.5;
 
   // After a zoom-level change that causes scrolling, re-center the scroll
   // position on whatever image point was requested as the focus (either the
@@ -76,11 +81,11 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
   useLayoutEffect(() => {
     const container = containerRef.current;
     const target = pendingFocusRef.current;
-    if (!container || !target || fitsInContainer) return;
+    if (!container || !target) return;
     pendingFocusRef.current = null;
-    container.scrollLeft = target.x * scale - container.clientWidth / 2;
-    container.scrollTop = target.y * scale - container.clientHeight / 2;
-  }, [scale, fitsInContainer]);
+    if (!fitsX) container.scrollLeft = target.x * scale - container.clientWidth / 2;
+    if (!fitsY) container.scrollTop = target.y * scale - container.clientHeight / 2;
+  }, [scale, fitsX, fitsY]);
 
   const getImagePointAtClient = (clientX: number, clientY: number): { x: number; y: number } => {
     const canvas = containerRef.current?.querySelector('canvas');
@@ -108,7 +113,7 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
   };
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (fitsInContainer) return;
+    if (fitsX && fitsY) return;
     const container = containerRef.current;
     if (!container) return;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -138,11 +143,15 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className={`flex-1 min-h-0 min-w-0 ${
-          fitsInContainer ? 'overflow-hidden flex items-center justify-center' : 'overflow-auto cursor-grab active:cursor-grabbing'
+        className={`flex-1 min-h-0 min-w-0 overflow-auto flex ${
+          fitsX && fitsY ? '' : 'cursor-grab active:cursor-grabbing'
         }`}
+        style={{
+          justifyContent: fitsX ? 'center' : 'flex-start',
+          alignItems: fitsY ? 'center' : 'flex-start',
+        }}
       >
-        <div className="relative" style={{ width: cssWidth, height: cssHeight }}>
+        <div className="relative shrink-0" style={{ width: cssWidth, height: cssHeight }}>
           <EditCanvas
             image={image}
             params={params}
@@ -157,7 +166,10 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
               imageHeight={image.height}
               lockedAspect={lockedAspect}
               onBeginChange={beginChange}
-              onChange={(crop) => setCrop('crop', crop)}
+              onChange={(crop) => {
+                setAutoRotationCrop(false);
+                setCrop('crop', crop);
+              }}
             />
           )}
         </div>
@@ -166,7 +178,7 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
         <button
           onClick={() => zoomTo(nextStep(scale, -1))}
           disabled={scale <= MIN_SCALE + 1e-6}
-          className="w-6 h-6 rounded hover:bg-neutral-900 disabled:opacity-30"
+          className="w-8 h-8 sm:w-6 sm:h-6 rounded hover:bg-neutral-900 disabled:opacity-30"
         >
           −
         </button>
@@ -182,7 +194,7 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
         <button
           onClick={() => zoomTo(nextStep(scale, 1))}
           disabled={scale >= MAX_SCALE - 1e-6}
-          className="w-6 h-6 rounded hover:bg-neutral-900 disabled:opacity-30"
+          className="w-8 h-8 sm:w-6 sm:h-6 rounded hover:bg-neutral-900 disabled:opacity-30"
         >
           +
         </button>

@@ -17,15 +17,26 @@ export const RATIO_PRESETS: { label: string; value: RatioPreset }[] = [
 interface CropToolStore {
   ratio: RatioPreset;
   orientation: Orientation;
+  // True until the user manually touches the crop (drags a handle, toggles
+  // the checkbox, or picks a ratio) — while true, changing Rotation keeps the
+  // crop tracking the ideal "no smudged corners" rectangle automatically.
+  // Once false, rotation changes only ever shrink the user's own crop to
+  // stay inside that safe rectangle, never override it.
+  autoRotationCrop: boolean;
   setRatio: (r: RatioPreset) => void;
   toggleOrientation: () => void;
+  setAutoRotationCrop: (v: boolean) => void;
+  resetForNewImage: () => void;
 }
 
 export const useCropTool = create<CropToolStore>((set) => ({
   ratio: 'free',
   orientation: 'landscape',
+  autoRotationCrop: true,
   setRatio: (r) => set({ ratio: r }),
   toggleOrientation: () => set((s) => ({ orientation: s.orientation === 'landscape' ? 'portrait' : 'landscape' })),
+  setAutoRotationCrop: (v) => set({ autoRotationCrop: v }),
+  resetForNewImage: () => set({ autoRotationCrop: true }),
 }));
 
 /**

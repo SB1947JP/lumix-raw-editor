@@ -5,7 +5,9 @@ import { Sidebar } from './components/Sidebar';
 import { ExportButton } from './components/ExportButton';
 import { decodePreview } from './lib/rawDecoder';
 import { computeImageHistogram } from './lib/histogram';
+import { JAPANESE_PALETTE } from './lib/palette';
 import { useEditParams } from './state/editParams';
+import { useCropTool } from './state/cropTool';
 import { DecodedImage, RawMetadata } from './types';
 
 type Status = 'empty' | 'loading' | 'ready' | 'error';
@@ -21,6 +23,7 @@ export default function App() {
   const params = useEditParams((s) => s.params);
   const resetParams = useEditParams((s) => s.reset);
   const undo = useEditParams((s) => s.undo);
+  const resetCropToolForNewImage = useCropTool((s) => s.resetForNewImage);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -43,6 +46,7 @@ export default function App() {
         const bytes = new Uint8Array(buf);
         const { image, metadata } = await decodePreview(bytes);
         resetParams();
+        resetCropToolForNewImage();
         setFileBytes(bytes);
         setFileName(file.name);
         setPreview(image);
@@ -53,7 +57,7 @@ export default function App() {
         setStatus('error');
       }
     },
-    [resetParams],
+    [resetParams, resetCropToolForNewImage],
   );
 
   const handleHistogram = useCallback((buckets: Uint32Array) => setHistogram(buckets), []);
@@ -61,25 +65,26 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-neutral-950">
-      <header className="flex items-center justify-between px-4 py-2 border-b border-neutral-800 shrink-0">
-        <h1 className="text-sm font-semibold text-neutral-300">Lumix RAW Editor</h1>
+      <header className="flex items-center justify-between gap-2 px-3 py-2 sm:px-4 border-b border-neutral-800 shrink-0">
+        <h1 className="text-xs sm:text-sm font-semibold text-neutral-300 truncate">Lumix RAW Editor</h1>
         {status === 'ready' && fileBytes && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => setStatus('empty')}
-              className="text-xs text-neutral-400 hover:text-neutral-200"
+              className="px-2 py-1 text-[11px] sm:text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
+              style={{ borderColor: JAPANESE_PALETTE.asagiiro, color: JAPANESE_PALETTE.asagiiro }}
             >
-              Open different file
+              Open file
             </button>
             <ExportButton fileBytes={fileBytes} fileName={fileName} params={params} />
           </div>
         )}
       </header>
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col sm:flex-row flex-1 min-h-0">
         <main className="flex-1 min-w-0 min-h-0 flex flex-col">
           {status !== 'ready' && (
-            <div className="flex-1 flex items-center justify-center p-6">
+            <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
               {status === 'empty' && <Dropzone onFile={handleFile} />}
               {status === 'loading' && <p className="text-neutral-400 text-sm">Decoding RAW file…</p>}
               {status === 'error' && (

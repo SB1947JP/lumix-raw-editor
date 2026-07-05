@@ -2,6 +2,8 @@ import { useEditParams } from '../../state/editParams';
 import { SliderRow } from '../SliderRow';
 import { Section } from './Section';
 import { RATIO_PRESETS, RatioPreset, resolveLockedAspect, useCropTool } from '../../state/cropTool';
+import { computeAutoCropForRotation, intersectCropRects, isFullFrame } from '../../lib/autoCrop';
+import { JAPANESE_PALETTE } from '../../lib/palette';
 import { CropRect } from '../../types';
 
 const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
@@ -28,26 +30,42 @@ function reshapeToRatio(crop: CropRect, lockedAspect: number, imageWidth: number
 
 export function Geometry({ imageWidth, imageHeight }: Props) {
   const { params, set, beginChange } = useEditParams();
-  const { ratio, orientation, setRatio, toggleOrientation } = useCropTool();
+  const { ratio, orientation, autoRotationCrop, setRatio, toggleOrientation, setAutoRotationCrop } = useCropTool();
   const crop = params.crop ?? FULL_CROP;
   const cropEnabled = params.crop !== null;
 
   const applyLockedAspect = (lockedAspect: number | null) => {
     if (lockedAspect) {
       beginChange();
+      setAutoRotationCrop(false);
       set('crop', reshapeToRatio(crop, lockedAspect, imageWidth, imageHeight));
     }
   };
 
+  const handleRotationChange = (newRotation: number) => {
+    set('rotation', newRotation);
+    const safeCrop = computeAutoCropForRotation(imageWidth, imageHeight, newRotation);
+    if (autoRotationCrop) {
+      // Keep tracking the ideal "no smudged corners" rectangle exactly —
+      // grows and shrinks with the angle until the user manually crops.
+      set('crop', isFullFrame(safeCrop) ? null : safeCrop);
+    } else if (params.crop) {
+      // The user already has a manual crop: only ever shrink it if needed to
+      // stay inside the safe zone, never override their own composition.
+      set('crop', intersectCropRects(params.crop, safeCrop));
+    }
+  };
+
   return (
-    <Section title="Geometry">
-      <SliderRow label="Rotation" value={params.rotation} min={-45} max={45} step={0.1} onChange={(v) => set('rotation', v)} />
+    <Section title="Geometry" color={JAPANESE_PALETTE.fujiiro}>
+      <SliderRow label="Rotation" value={params.rotation} min={-45} max={45} step={0.1} onChange={handleRotationChange} />
       <label className="flex items-center gap-2 text-xs text-neutral-400 mb-3 select-none">
         <input
           type="checkbox"
           checked={cropEnabled}
           onChange={(e) => {
             beginChange();
+            setAutoRotationCrop(false);
             set('crop', e.target.checked ? { ...FULL_CROP } : null);
           }}
         />
