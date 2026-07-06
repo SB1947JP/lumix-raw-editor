@@ -66,7 +66,7 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-screen bg-neutral-950">
       <header className="flex items-center justify-between gap-2 px-3 py-2 sm:px-4 border-b border-neutral-800 shrink-0">
-        <h1 className="text-xs sm:text-sm font-semibold text-neutral-300 truncate">Lumix RAW Editor</h1>
+        <h1 className="text-xs sm:text-sm font-semibold text-neutral-300 truncate">Sean's RAW Editor</h1>
         {status === 'ready' && fileBytes && (
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button

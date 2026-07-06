@@ -45,13 +45,38 @@ vec3 linearToSrgb(vec3 c) {
   return vec3(linearToSrgb(c.r), linearToSrgb(c.g), linearToSrgb(c.b));
 }
 
-// Compresses values above `knee` so they approach 1.0 asymptotically instead
-// of overshooting it and getting hard-clipped later — even a very large
-// excess still lands just under 1.0, preserving some separation between
-// bright tones instead of flattening them all to solid white.
-vec3 softClipHighlights(vec3 c, float knee, float range) {
-  vec3 excess = max(c - knee, 0.0);
-  return c - excess + (1.0 - knee) * excess / (excess + range);
+// Highlight shoulder in linear light, referencing darktable's `sigmoid`
+// module (a generalized log-logistic tone curve in its "RGB ratio" /
+// preserve-colour mode). Two properties matter:
+//
+//   1. It runs in LINEAR light, where an exposure stop is a literal doubling,
+//      so the rolloff is physically shaped like real film/sensor highlight
+//      compression rather than an arbitrary curve on gamma-encoded values.
+//   2. It is applied as an RGB *ratio*: the log-logistic curve is evaluated
+//      on the single brightest channel and all three channels are scaled by
+//      the same factor. darktable does this specifically because running the
+//      curve per-channel pulls each channel toward the 1.0 asymptote at a
+//      different rate, collapsing the gaps between channels — the exact
+//      "bright colours wash out to grey" failure. Uniform scaling holds hue
+//      and saturation while the brightest channel rolls off.
+//
+// Values at/below `knee` pass through untouched; the excess above it is rolled
+// off through a Michaelis-Menten shoulder e/(e+ceil) that is C1-continuous at
+// the knee (slope 1, no visible "elbow") and asymptotes to the remaining
+// headroom `ceil = 1 - knee`, so the mapped brightest channel is mathematically
+// guaranteed to stay just below display white (1.0) — it can never hard-clip,
+// no matter how many stops are pushed. Because every channel is scaled by the
+// same factor derived from that one brightest channel, hue and saturation are
+// preserved: highlights keep separating instead of fusing into a flat grey/
+// white blob. Raising `knee` toward 1.0 disables the shoulder, which is how
+// the imported default (exposure <= 0) stays untouched.
+vec3 highlightShoulder(vec3 c, float knee) {
+  float m = max(max(c.r, c.g), c.b);
+  if (m <= knee) return c;
+  float excess = m - knee;
+  float ceil = 1.0 - knee;
+  float mNew = knee + ceil * excess / (excess + ceil);
+  return c * (mNew / m);
 }
 
 vec3 applyWhiteBalance(vec3 c, float temp, float tint) {
@@ -115,12 +140,19 @@ vec3 applyToneRegions(vec3 c, float shadows, float whites, float blacks) {
 // tan()-based pivot scale, whose slope runs away to near-vertical as the
 // slider approaches its extremes, which is what made high Contrast values
 // look like a harsh clip instead of a gradual tonal stretch.
+//
+// The curve is evaluated on luma and the color rescaled to match (via
+// scaleToLuma), not applied to each RGB channel independently — running the
+// same power curve on R/G/B separately compresses the gap between channels
+// as they near 0 or 1, which desaturates bright/dark colors toward grey
+// faster than a real contrast adjustment should.
 vec3 applyContrast(vec3 c, float contrast) {
   float amt = clamp(contrast, -100.0, 100.0) / 100.0;
   float curveGamma = pow(2.0, -amt * 1.3); // <1 steepens (more contrast), >1 flattens (less)
-  vec3 centered = c - 0.5;
-  vec3 shaped = sign(centered) * pow(abs(centered) * 2.0, vec3(curveGamma)) * 0.5;
-  return shaped + 0.5;
+  float l = luma(c);
+  float centered = l - 0.5;
+  float lNew = sign(centered) * pow(abs(centered) * 2.0, curveGamma) * 0.5 + 0.5;
+  return scaleToLuma(c, l, lNew);
 }
 
 vec3 applySaturationVibrance(vec3 c, float saturation, float vibrance) {
@@ -171,27 +203,29 @@ void main() {
   // handful of dark, noisy pixels slightly below 0.
   vec3 linearColor = srgbToLinear(max(color, 0.0));
   linearColor *= pow(2.0, uExposure);
+
+  // Roll off blown highlights with the capped log-logistic shoulder while
+  // still in linear light. The knee is lowered from 1.0 (shoulder inert) down
+  // to 0.7 as exposure is pushed up, so at 0 (or negative) exposure the
+  // decoded RAW passes through unaltered — linear values never exceed the
+  // knee — and the imported view stays faithful to the camera's rendering.
+  float exposureAmount = clamp(uExposure / 3.0, 0.0, 1.0);
+  float knee = mix(1.0, 0.7, exposureAmount);
+  linearColor = highlightShoulder(linearColor, knee);
   color = linearToSrgb(linearColor);
 
-  // Highlight protection only engages once exposure is actually pushed up —
-  // at 0 (or negative) exposure the decoded RAW passes through unaltered, so
-  // the default/imported view stays faithful to the camera's own rendering.
-  float exposureAmount = clamp(uExposure / 3.0, 0.0, 1.0);
-  float knee = mix(1.0, 0.55, exposureAmount);
-  // `range` is derived (not a free constant) so the curve's slope at the
-  // knee matches the identity line's slope of 1 exactly — the standard
-  // requirement for a tone curve's shoulder to blend in without a visible
-  // "elbow", the same property a spline-based curve (e.g. darktable's tone
-  // curve module) enforces by construction.
-  float range = max(1.0 - knee, 0.02);
-  color = softClipHighlights(color, knee, range);
   color = applyWhiteBalance(color, uTemperature, uTint);
 
-  // Brightness lifts/lowers midtones via a gamma curve (0 and 1 stay fixed),
-  // unlike Exposure's uniform multiplicative gain which pushes highlights
-  // toward clipping much faster.
+  // Brightness lifts/lowers midtones via a gamma curve on luma (0 and 1 stay
+  // fixed), unlike Exposure's uniform multiplicative gain which pushes
+  // highlights toward clipping much faster. The curve is applied to luma and
+  // the color rescaled to match, rather than to each RGB channel
+  // independently — a per-channel gamma curve compresses the gap between
+  // channels as they approach 1.0, which is a fast grey-out on bright colors.
   float brightnessGamma = pow(2.0, -uBrightness / 100.0);
-  color = pow(clamp(color, 0.0, 1.0), vec3(brightnessGamma));
+  float lBeforeBrightness = luma(clamp(color, 0.0, 1.0));
+  float lAfterBrightness = pow(lBeforeBrightness, brightnessGamma);
+  color = scaleToLuma(color, lBeforeBrightness, lAfterBrightness);
 
   color = applyContrast(color, uContrast);
 

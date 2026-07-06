@@ -30,13 +30,13 @@ interface CropToolStore {
 }
 
 export const useCropTool = create<CropToolStore>((set) => ({
-  ratio: 'free',
+  ratio: 'original',
   orientation: 'landscape',
   autoRotationCrop: true,
   setRatio: (r) => set({ ratio: r }),
   toggleOrientation: () => set((s) => ({ orientation: s.orientation === 'landscape' ? 'portrait' : 'landscape' })),
   setAutoRotationCrop: (v) => set({ autoRotationCrop: v }),
-  resetForNewImage: () => set({ autoRotationCrop: true }),
+  resetForNewImage: () => set({ autoRotationCrop: true, ratio: 'original' }),
 }));
 
 /**
