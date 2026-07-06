@@ -204,13 +204,16 @@ void main() {
   vec3 linearColor = srgbToLinear(max(color, 0.0));
   linearColor *= pow(2.0, uExposure);
 
-  // Roll off blown highlights with the capped log-logistic shoulder while
-  // still in linear light. The knee is lowered from 1.0 (shoulder inert) down
-  // to 0.7 as exposure is pushed up, so at 0 (or negative) exposure the
-  // decoded RAW passes through unaltered — linear values never exceed the
-  // knee — and the imported view stays faithful to the camera's rendering.
+  // Roll off blown highlights with the capped log-logistic shoulder (the
+  // shoulder of darktable's sigmoid tone curve) while still in linear light.
+  // This is ALWAYS ON — even at rest a gentle filmic shoulder keeps the very
+  // brightest near-white tones from ever hard-clipping and holds their colour,
+  // which is what a real scene-referred renderer does. The knee is high at
+  // exposure 0 (0.9 linear ≈ only the top ~4% of the range is touched, so the
+  // faithful default barely moves) and drops toward 0.65 as exposure is pushed
+  // up, so heavier boosts start their rolloff earlier and never blow out.
   float exposureAmount = clamp(uExposure / 3.0, 0.0, 1.0);
-  float knee = mix(1.0, 0.7, exposureAmount);
+  float knee = mix(0.9, 0.65, exposureAmount);
   linearColor = highlightShoulder(linearColor, knee);
   color = linearToSrgb(linearColor);
 
