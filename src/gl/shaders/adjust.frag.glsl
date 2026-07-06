@@ -205,15 +205,15 @@ void main() {
   linearColor *= pow(2.0, uExposure);
 
   // Roll off blown highlights with the capped log-logistic shoulder (the
-  // shoulder of darktable's sigmoid tone curve) while still in linear light.
-  // This is ALWAYS ON — even at rest a gentle filmic shoulder keeps the very
-  // brightest near-white tones from ever hard-clipping and holds their colour,
-  // which is what a real scene-referred renderer does. The knee is high at
-  // exposure 0 (0.9 linear ≈ only the top ~4% of the range is touched, so the
-  // faithful default barely moves) and drops toward 0.65 as exposure is pushed
-  // up, so heavier boosts start their rolloff earlier and never blow out.
+  // shoulder of darktable's sigmoid tone curve) while still in linear light,
+  // applied as an RGB ratio so the rolloff holds colour instead of washing to
+  // grey. The knee starts at 1.0 (shoulder fully inert) so at rest the decoded
+  // image passes through untouched and true white still reaches 255 — no
+  // resting compression. As exposure is pushed the knee drops toward 0.65, so
+  // the shoulder engages automatically and boosted highlights roll off
+  // smoothly to white without any channel ever hard-clipping.
   float exposureAmount = clamp(uExposure / 3.0, 0.0, 1.0);
-  float knee = mix(0.9, 0.65, exposureAmount);
+  float knee = mix(1.0, 0.65, exposureAmount);
   linearColor = highlightShoulder(linearColor, knee);
   color = linearToSrgb(linearColor);
 
