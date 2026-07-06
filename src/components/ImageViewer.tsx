@@ -143,7 +143,7 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className={`flex-1 min-h-0 min-w-0 overflow-auto flex ${
+        className={`flex-1 min-h-0 min-w-0 overflow-auto overscroll-contain touch-none flex ${
           fitsX && fitsY ? '' : 'cursor-grab active:cursor-grabbing'
         }`}
         style={{

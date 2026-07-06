@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Stop scroll/drag gestures inside the app (panning the zoomed image, etc.)
+   from rubber-banding into the page and triggering iOS/Android's native
+   pull-to-refresh, which was reloading the page and losing the loaded image. */
+html, body {
+  overscroll-behavior: none;
+  height: 100%;
+}
+
+/* Scales every rem-based Tailwind text utility down proportionally, app-wide,
+   instead of editing each component's text-size class individually. */
+html {
+  font-size: 15px;
+}
+
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;

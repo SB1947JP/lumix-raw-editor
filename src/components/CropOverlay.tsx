@@ -60,7 +60,7 @@ export function CropOverlay({ crop, imageWidth, imageHeight, lockedAspect, onCha
   return (
     <div ref={rootRef} className="absolute inset-0 pointer-events-none" onPointerMove={handlePointerMove} onPointerUp={endDrag}>
       <div
-        className="absolute pointer-events-auto border border-white cursor-move"
+        className="absolute pointer-events-auto touch-none border border-white cursor-move"
         style={{
           left: `${crop.x * 100}%`,
           top: `${crop.y * 100}%`,
@@ -73,7 +73,7 @@ export function CropOverlay({ crop, imageWidth, imageHeight, lockedAspect, onCha
         {HANDLES.filter((h) => !lockedAspect || !EDGE_HANDLES.has(h.id)).map((h) => (
           <div
             key={h.id}
-            className={`absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 bg-white border border-neutral-900 rounded-sm pointer-events-auto ${h.position} ${h.cursor}`}
+            className={`absolute w-4 h-4 sm:w-3 sm:h-3 -translate-x-1/2 -translate-y-1/2 bg-white border border-neutral-900 rounded-sm pointer-events-auto touch-none ${h.position} ${h.cursor}`}
             onPointerDown={startDrag(h.id)}
           />
         ))}

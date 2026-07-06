@@ -196,6 +196,10 @@ export class RawRenderer {
     return this.canvas.toDataURL(type, quality);
   }
 
+  toBlob(type: string, quality?: number): Promise<Blob | null> {
+    return new Promise((resolve) => this.canvas.toBlob(resolve, type, quality));
+  }
+
   dispose() {
     const gl = this.gl;
     gl.deleteTexture(this.texture);

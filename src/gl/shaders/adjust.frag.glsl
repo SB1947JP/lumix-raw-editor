@@ -63,13 +63,28 @@ vec3 applyWhiteBalance(vec3 c, float temp, float tint) {
   return c * gain;
 }
 
+// Retargets a pixel's luma to `lTarget` (both values perceptual/gamma-encoded)
+// while leaving its hue and saturation untouched. This must be done as a
+// multiplicative scale of the *linear-light* RGB triplet — scaling every
+// channel by the same factor is the one operation that's guaranteed not to
+// shift color, because it corresponds to physically changing the amount of
+// light without altering its spectral ratios. Doing the equivalent adjustment
+// as a flat additive shift on gamma-encoded channels (the old approach) is
+// not hue-preserving: gamma compresses channels unevenly, so an equal delta
+// added to R/G/B changes their ratios, and is exactly what produced the
+// mushy, discolored highlights/shadows.
+vec3 scaleToLuma(vec3 c, float l, float lTarget) {
+  vec3 linC = srgbToLinear(max(c, 0.0));
+  float linL = max(luma(linC), 1e-4);
+  float linTarget = srgbToLinear(clamp(lTarget, 0.0, 1.0));
+  return linearToSrgb(linC * (linTarget / linL));
+}
+
 // Highlights: negative values recover detail by compressing the bright range
 // toward a pivot (pulling near-white pixels down more than moderately bright
 // ones, which is what actually reveals lost gradation instead of just
 // dimming everything by a flat amount); positive values expand/brighten the
-// same range. The luma shift is added equally to all channels (not
-// multiplied) so relative channel differences — and therefore color/
-// saturation — stay put; only brightness moves.
+// same range.
 vec3 applyHighlights(vec3 c, float highlights) {
   float l = luma(c);
   float pivot = 0.5;
@@ -77,9 +92,8 @@ vec3 applyHighlights(vec3 c, float highlights) {
   float factor = 1.0 + amt * 0.6; // <1 compresses (recover), >1 expands (brighten)
   float mask = smoothstep(0.3, 0.7, l);
 
-  float lNew = pivot + (l - pivot) * factor;
-  float delta = (lNew - l) * mask;
-  return c + vec3(delta);
+  float lTarget = mix(l, pivot + (l - pivot) * factor, mask);
+  return scaleToLuma(c, l, lTarget);
 }
 
 vec3 applyToneRegions(vec3 c, float shadows, float whites, float blacks) {
@@ -88,10 +102,11 @@ vec3 applyToneRegions(vec3 c, float shadows, float whites, float blacks) {
   float whiteMask = smoothstep(0.6, 1.0, l);
   float blackMask = 1.0 - smoothstep(0.0, 0.4, l);
 
-  c += vec3((shadows / 100.0) * shadowMask * 0.35);
-  c += vec3((whites / 100.0) * whiteMask * 0.5);
-  c += vec3((blacks / 100.0) * blackMask * 0.5);
-  return c;
+  float lTarget = l
+    + (shadows / 100.0) * shadowMask * 0.35
+    + (whites / 100.0) * whiteMask * 0.5
+    + (blacks / 100.0) * blackMask * 0.5;
+  return scaleToLuma(c, l, lTarget);
 }
 
 // Contrast as a symmetric power curve pivoted at mid-gray: distance from 0.5
