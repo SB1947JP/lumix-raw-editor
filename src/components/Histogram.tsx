@@ -1,29 +1,38 @@
 import { useState } from 'react';
 import { JAPANESE_PALETTE } from '../lib/palette';
+import { HistogramData } from '../lib/histogram';
 
 interface Props {
-  before: Uint32Array | null;
-  after: Uint32Array | null;
+  before: HistogramData | null;
+  after: HistogramData | null;
 }
 
 type Mode = 'before' | 'after';
 
-const COLORS: Record<Mode, string> = {
+const TAB_COLORS: Record<Mode, string> = {
   before: JAPANESE_PALETTE.shuiro,
   after: JAPANESE_PALETTE.asagiiro,
 };
 
+const CHANNELS = [
+  { key: 'r', color: '#ef4444' },
+  { key: 'g', color: '#22c55e' },
+  { key: 'b', color: '#3b82f6' },
+] as const;
+
+function toPoints(buckets: Uint32Array, max: number): string {
+  return Array.from(buckets)
+    .map((count, i) => `${(i / 255) * 100},${100 - (count / max) * 100}`)
+    .join(' ');
+}
+
 export function Histogram({ before, after }: Props) {
   const [mode, setMode] = useState<Mode>('after');
-  const buckets = mode === 'before' ? before : after;
-  const color = COLORS[mode];
+  const data = mode === 'before' ? before : after;
 
-  const max = buckets ? Math.max(1, ...buckets) : 1;
-  const points = buckets
-    ? Array.from(buckets)
-        .map((count, i) => `${(i / 255) * 100},${100 - (count / max) * 100}`)
-        .join(' ')
-    : '';
+  // One shared max across R/G/B so the channels are comparable — this is what
+  // makes per-channel clipping visible as a spike hitting an edge.
+  const max = data ? Math.max(1, ...data.r, ...data.g, ...data.b) : 1;
 
   // Quarter-tone gridlines/labels give the 0–255 chart a readable scale
   // (shadows → highlights) so bucket positions can be judged, not just shape.
@@ -31,7 +40,7 @@ export function Histogram({ before, after }: Props) {
 
   return (
     <div>
-      {buckets ? (
+      {data ? (
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-16 w-full rounded bg-neutral-950">
           {TICKS.slice(1, -1).map((t) => (
             <line
@@ -44,7 +53,24 @@ export function Histogram({ before, after }: Props) {
               strokeWidth={0.4}
             />
           ))}
-          <polyline points={`0,100 ${points} 100,100`} fill={color} fillOpacity={0.45} stroke="none" />
+          <polyline
+            points={`0,100 ${toPoints(data.luma, max)} 100,100`}
+            fill="#a3a3a3"
+            fillOpacity={0.18}
+            stroke="none"
+          />
+          {CHANNELS.map(({ key, color }) => (
+            <polyline
+              key={key}
+              points={`0,100 ${toPoints(data[key], max)} 100,100`}
+              fill={color}
+              fillOpacity={0.3}
+              stroke={color}
+              strokeOpacity={0.6}
+              strokeWidth={0.5}
+              style={{ mixBlendMode: 'screen' }}
+            />
+          ))}
         </svg>
       ) : (
         <div className="h-16 w-full rounded bg-neutral-950" />
@@ -61,8 +87,8 @@ export function Histogram({ before, after }: Props) {
             onClick={() => setMode(m)}
             className="flex-1 py-0.5 rounded text-[10px] uppercase tracking-wide font-medium"
             style={{
-              color: mode === m ? COLORS[m] : '#71717a',
-              backgroundColor: mode === m ? `${COLORS[m]}22` : 'transparent',
+              color: mode === m ? TAB_COLORS[m] : '#71717a',
+              backgroundColor: mode === m ? `${TAB_COLORS[m]}22` : 'transparent',
             }}
           >
             {m}

@@ -1,12 +1,12 @@
 import { CSSProperties, useEffect, useRef } from 'react';
 import { RawRenderer } from '../gl/renderer';
 import { DecodedImage, EditParams } from '../types';
-import { computeLumaHistogram } from '../lib/histogram';
+import { computeRgbHistogram, HistogramData } from '../lib/histogram';
 
 interface Props {
   image: DecodedImage;
   params: EditParams;
-  onHistogram?: (buckets: Uint32Array) => void;
+  onHistogram?: (histogram: HistogramData) => void;
   style?: CSSProperties;
   /** False for interactive editing (always show the full frame so the crop
    *  box overlay has room to drag), true to actually bake the crop in. */
@@ -41,7 +41,7 @@ export function EditCanvas({ image, params, onHistogram, style, applyCrop = true
       if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         const { data, width, height } = renderer.readPixels();
-        onHistogram(computeLumaHistogram(data, width, height));
+        onHistogram(computeRgbHistogram(data, width, height));
       });
     }
   }, [image, params, onHistogram, applyCrop]);

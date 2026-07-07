@@ -4,7 +4,7 @@ import { ImageViewer } from './components/ImageViewer';
 import { Sidebar } from './components/Sidebar';
 import { ExportButton } from './components/ExportButton';
 import { decodePreview } from './lib/rawDecoder';
-import { computeImageHistogram } from './lib/histogram';
+import { computeImageRgbHistogram, HistogramData } from './lib/histogram';
 import { JAPANESE_PALETTE } from './lib/palette';
 import { useEditParams } from './state/editParams';
 import { useCropTool } from './state/cropTool';
@@ -19,7 +19,7 @@ export default function App() {
   const [fileName, setFileName] = useState<string>('');
   const [preview, setPreview] = useState<DecodedImage | null>(null);
   const [metadata, setMetadata] = useState<RawMetadata | null>(null);
-  const [histogram, setHistogram] = useState<Uint32Array | null>(null);
+  const [histogram, setHistogram] = useState<HistogramData | null>(null);
   const params = useEditParams((s) => s.params);
   const resetParams = useEditParams((s) => s.reset);
   const undo = useEditParams((s) => s.undo);
@@ -60,8 +60,8 @@ export default function App() {
     [resetParams, resetCropToolForNewImage],
   );
 
-  const handleHistogram = useCallback((buckets: Uint32Array) => setHistogram(buckets), []);
-  const originalHistogram = useMemo(() => (preview ? computeImageHistogram(preview) : null), [preview]);
+  const handleHistogram = useCallback((h: HistogramData) => setHistogram(h), []);
+  const originalHistogram = useMemo(() => (preview ? computeImageRgbHistogram(preview) : null), [preview]);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-neutral-950">

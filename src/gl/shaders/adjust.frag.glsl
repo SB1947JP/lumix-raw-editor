@@ -14,8 +14,8 @@ uniform float uHighlights;  // -100..100
 uniform float uShadows;     // -100..100
 uniform float uWhites;      // -100..100
 uniform float uBlacks;      // -100..100
-uniform float uTemperature; // -100..100
-uniform float uTint;        // -100..100
+uniform vec3 uWbGain;       // linear-light RGB gains, precomputed on the CPU
+                            // from the Planckian-locus temperature/tint model
 uniform float uSaturation;  // -100..100
 uniform float uVibrance;    // -100..100
 uniform float uSharpen;     // 0..100
@@ -79,21 +79,6 @@ vec3 highlightShoulder(vec3 c, float knee) {
   return c * (mNew / m);
 }
 
-// White balance as channel gains in LINEAR light — a colour temperature shift
-// is physically a change in the illuminant's spectral power, i.e. a linear
-// multiply. Applying the same gains to gamma-encoded values (the old approach)
-// over-corrects shadows relative to highlights and pushes bright channels past
-// 1.0 into the display clamp. The gains are raised to ~2.2 so the slider's
-// perceptual strength matches what the old gamma-space version felt like.
-vec3 applyWhiteBalanceLinear(vec3 linC, float temp, float tint) {
-  vec3 gain = vec3(
-    1.0 + temp * 0.004,
-    1.0 + tint * 0.003,
-    1.0 - temp * 0.004
-  );
-  return linC * pow(max(gain, 0.0), vec3(2.2));
-}
-
 // Softens a slider's response near zero: signed-square keeps the full effect
 // available at the ends of the travel but makes the first half of the range
 // gentle, so small adjustments stay subtle instead of committing most of the
@@ -154,12 +139,18 @@ vec3 applyHighlights(vec3 c, float highlights) {
 
 vec3 applyToneRegions(vec3 c, float shadows, float whites, float blacks) {
   float l = luma(c);
-  float shadowMask = 1.0 - smoothstep(0.0, 0.65, l);
+  // Partition-of-unity masks (the tone-equalizer approach): Blacks owns the
+  // deepest tones and hands over smoothly to Shadows, which peaks in the
+  // lower-mids and fades out before Whites picks up the top end. The old
+  // masks overlapped heavily (Blacks' 0-0.4 range sat entirely inside
+  // Shadows' 0-0.65), so pushing both sliders double-lifted the same pixels
+  // and made their combined effect unpredictable.
+  float blackMask = 1.0 - smoothstep(0.0, 0.3, l);
+  float shadowMask = smoothstep(0.0, 0.3, l) * (1.0 - smoothstep(0.3, 0.65, l));
   float whiteMask = smoothstep(0.6, 1.0, l);
-  float blackMask = 1.0 - smoothstep(0.0, 0.4, l);
 
   float lTarget = l
-    + softResponse(shadows / 100.0) * shadowMask * 0.35
+    + softResponse(shadows / 100.0) * shadowMask * 0.4
     + softResponse(whites / 100.0) * whiteMask * 0.5
     + softResponse(blacks / 100.0) * blackMask * 0.5;
   return scaleToLuma(c, l, lTarget);
@@ -194,8 +185,25 @@ vec3 applySaturationVibrance(vec3 c, float saturation, float vibrance) {
 
   float maxChannel = max(c.r, max(c.g, c.b));
   float minChannel = min(c.r, min(c.g, c.b));
-  float currentSat = maxChannel - minChannel;
-  float vibFactor = 1.0 + (vibrance / 100.0) * (1.0 - currentSat);
+  float delta = maxChannel - minChannel;
+  float currentSat = delta;
+
+  // Skin-tone protection: vibrance is meant to punch up dull skies and
+  // foliage without wrecking people. Compute the pixel's hue and feather the
+  // vibrance boost down by up to 70% inside the orange band (~5-60 deg) where
+  // skin tones live, so faces stay natural while everything else gains.
+  float hueDeg = 0.0;
+  if (delta > 1e-4) {
+    float h;
+    if (c.r >= c.g && c.r >= c.b) h = mod((c.g - c.b) / delta, 6.0);
+    else if (c.g >= c.b) h = (c.b - c.r) / delta + 2.0;
+    else h = (c.r - c.g) / delta + 4.0;
+    hueDeg = h * 60.0;
+  }
+  float skinWeight = smoothstep(5.0, 15.0, hueDeg) * (1.0 - smoothstep(45.0, 60.0, hueDeg));
+  float protection = 1.0 - 0.7 * skinWeight;
+
+  float vibFactor = 1.0 + (vibrance / 100.0) * (1.0 - currentSat) * protection;
   c = mix(vec3(luma(c)), c, vibFactor);
   return c;
 }
@@ -234,7 +242,12 @@ void main() {
   // handful of dark, noisy pixels slightly below 0.
   vec3 linearColor = srgbToLinear(max(color, 0.0));
   linearColor *= pow(2.0, uExposure);
-  linearColor = applyWhiteBalanceLinear(linearColor, uTemperature, uTint);
+  // White balance as linear-light channel gains — a temperature shift is
+  // physically a change in the illuminant's spectrum, i.e. a linear multiply.
+  // The gains themselves come from a real Planckian-locus model evaluated on
+  // the CPU (see lib/whiteBalance.ts), so the slider tracks actual Kelvin
+  // colour temperatures instead of an ad-hoc R/B seesaw.
+  linearColor *= uWbGain;
 
   // Roll off blown highlights with the capped log-logistic shoulder (the
   // shoulder of darktable's sigmoid tone curve) while still in linear light,

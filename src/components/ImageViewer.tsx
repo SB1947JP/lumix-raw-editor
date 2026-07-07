@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, WheelEvent, PointerEvent 
 import { EditCanvas } from './EditCanvas';
 import { CropOverlay } from './CropOverlay';
 import { DecodedImage, EditParams } from '../types';
+import { HistogramData } from '../lib/histogram';
 import { useCropTool, resolveLockedAspect } from '../state/cropTool';
 import { useEditParams } from '../state/editParams';
 
@@ -23,7 +24,7 @@ function nextStep(scale: number, direction: 1 | -1): number {
 interface Props {
   image: DecodedImage;
   params: EditParams;
-  onHistogram?: (buckets: Uint32Array) => void;
+  onHistogram?: (histogram: HistogramData) => void;
 }
 
 export function ImageViewer({ image, params, onHistogram }: Props) {

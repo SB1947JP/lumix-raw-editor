@@ -44,12 +44,17 @@ function afterExposure(x: number, exposure: number): number {
   return linearToSrgb(clamp(lin, 0, 1));
 }
 
+/** Signed-square slider response, mirroring the shader's softResponse(). */
+function softResponse(amt: number): number {
+  return amt * Math.abs(amt);
+}
+
 /** Full forward tone response for a luma value with exposure + Blacks only. */
 function toneForward(x: number, exposure: number, blacks: number): number {
   const s = afterExposure(x, exposure);
-  // applyToneRegions Blacks term: shadow-masked lift, added to target luma.
-  const blackMask = 1 - smoothstep(0, 0.4, s);
-  return clamp(s + (blacks / 100) * blackMask * 0.5, 0, 1);
+  // applyToneRegions Blacks term: partition-mask lift, added to target luma.
+  const blackMask = 1 - smoothstep(0, 0.3, s);
+  return clamp(s + softResponse(blacks / 100) * blackMask * 0.5, 0, 1);
 }
 
 /** Bisection root-find for a monotonic function f over [lo, hi] targeting 0. */

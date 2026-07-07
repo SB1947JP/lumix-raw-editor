@@ -1,5 +1,6 @@
 import { useEditParams } from '../../state/editParams';
 import { DecodedImage, RawMetadata } from '../../types';
+import { HistogramData } from '../../lib/histogram';
 import { Histogram } from '../Histogram';
 import { Basic } from './Basic';
 import { Tone } from './Tone';
@@ -9,8 +10,8 @@ import { Geometry } from './Geometry';
 
 interface Props {
   metadata: RawMetadata | null;
-  histogram: Uint32Array | null;
-  originalHistogram: Uint32Array | null;
+  histogram: HistogramData | null;
+  originalHistogram: HistogramData | null;
   image: DecodedImage;
 }
 
