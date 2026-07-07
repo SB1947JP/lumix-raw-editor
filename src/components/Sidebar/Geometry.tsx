@@ -2,7 +2,7 @@ import { useEditParams } from '../../state/editParams';
 import { SliderRow } from '../SliderRow';
 import { Section } from './Section';
 import { RATIO_PRESETS, RatioPreset, resolveLockedAspect, useCropTool } from '../../state/cropTool';
-import { computeAutoCropForRotation, intersectCropRects, isFullFrame } from '../../lib/autoCrop';
+import { computeAutoCropForRotation, fitAspectInRect, intersectCropRects, isFullFrame } from '../../lib/autoCrop';
 import { JAPANESE_PALETTE } from '../../lib/palette';
 import { CropRect } from '../../types';
 
@@ -45,14 +45,22 @@ export function Geometry({ imageWidth, imageHeight }: Props) {
   const handleRotationChange = (newRotation: number) => {
     set('rotation', newRotation);
     const safeCrop = computeAutoCropForRotation(imageWidth, imageHeight, newRotation);
+    const lockedAspect = resolveLockedAspect(ratio, orientation, imageWidth, imageHeight);
     if (autoRotationCrop) {
-      // Keep tracking the ideal "no smudged corners" rectangle exactly —
-      // grows and shrinks with the angle until the user manually crops.
-      set('crop', isFullFrame(safeCrop) ? null : safeCrop);
+      // Track the ideal "no smudged corners" rectangle as the angle changes.
+      // With a locked ratio, keep that exact aspect and just shrink the largest
+      // such rectangle to fit the safe zone — otherwise the crop's ratio would
+      // drift with the rotation angle. Free ratio uses the safe rect as-is.
+      const target = lockedAspect
+        ? fitAspectInRect(safeCrop, lockedAspect, imageWidth, imageHeight)
+        : safeCrop;
+      set('crop', isFullFrame(target) ? null : target);
     } else if (params.crop) {
-      // The user already has a manual crop: only ever shrink it if needed to
-      // stay inside the safe zone, never override their own composition.
-      set('crop', intersectCropRects(params.crop, safeCrop));
+      // The user already has a manual crop: shrink it to stay inside the safe
+      // zone, but preserve a locked aspect ratio rather than letting the
+      // intersection distort it.
+      const clipped = intersectCropRects(params.crop, safeCrop);
+      set('crop', lockedAspect ? fitAspectInRect(clipped, lockedAspect, imageWidth, imageHeight) : clipped);
     }
   };
 

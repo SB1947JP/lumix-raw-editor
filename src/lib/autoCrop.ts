@@ -56,6 +56,35 @@ export function computeAutoCropForRotation(imageWidth: number, imageHeight: numb
   };
 }
 
+/**
+ * Largest rectangle of a fixed pixel aspect ratio that fits, centred, inside
+ * `rect`. Used so that rotating an image (which shrinks the smudge-free safe
+ * zone) keeps the crop at its locked aspect ratio instead of letting the ratio
+ * drift with the angle. `pixelAspect` is width/height in real pixels, so it's
+ * converted into fraction space via the image's own dimensions.
+ */
+export function fitAspectInRect(
+  rect: CropRect,
+  pixelAspect: number,
+  imageWidth: number,
+  imageHeight: number,
+): CropRect {
+  // (width·imageWidth)/(height·imageHeight) = pixelAspect  ⇒  height = width·k
+  const k = imageWidth / (pixelAspect * imageHeight);
+  let width = rect.width;
+  let height = width * k;
+  if (height > rect.height) {
+    height = rect.height;
+    width = height / k;
+  }
+  return {
+    x: rect.x + (rect.width - width) / 2,
+    y: rect.y + (rect.height - height) / 2,
+    width,
+    height,
+  };
+}
+
 /** Intersection of two crop rects (both fractions of the same frame). */
 export function intersectCropRects(a: CropRect, b: CropRect): CropRect {
   const x0 = Math.max(a.x, b.x);
