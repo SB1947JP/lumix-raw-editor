@@ -5,6 +5,7 @@ import { Histogram } from '../Histogram';
 import { Basic } from './Basic';
 import { Tone } from './Tone';
 import { Color } from './Color';
+import { Grading } from './Grading';
 import { Detail } from './Detail';
 import { Geometry } from './Geometry';
 
@@ -34,6 +35,7 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
       <Basic image={image} />
       <Tone />
       <Color />
+      <Grading />
       <Detail />
       <Geometry imageWidth={image.width} imageHeight={image.height} />
       <div className="mt-2 flex gap-2">

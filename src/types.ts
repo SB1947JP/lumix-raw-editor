@@ -43,6 +43,13 @@ export interface EditParams {
   saturation: number; // -100..100
   vibrance: number; // -100..100
   sharpen: number; // 0..100
+  // Perceptual 3-way colour grading (Oklab). Each range: hue 0..360, strength 0..100.
+  gradeShadowHue: number;
+  gradeShadowStr: number;
+  gradeMidHue: number;
+  gradeMidStr: number;
+  gradeHighlightHue: number;
+  gradeHighlightStr: number;
   rotation: number; // degrees, 0/90/180/270 plus fine rotation -45..45
   crop: CropRect | null;
 }
@@ -60,6 +67,12 @@ export const DEFAULT_EDIT_PARAMS: EditParams = {
   saturation: 0,
   vibrance: 0,
   sharpen: 0,
+  gradeShadowHue: 0,
+  gradeShadowStr: 0,
+  gradeMidHue: 0,
+  gradeMidStr: 0,
+  gradeHighlightHue: 0,
+  gradeHighlightStr: 0,
   rotation: 0,
   crop: null,
 };
