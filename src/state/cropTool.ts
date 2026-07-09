@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 /** 'free' = no lock, 'original' = source image's own aspect, number = a landscape-form (>=1) width/height ratio. */
 export type RatioPreset = 'free' | 'original' | number;
@@ -29,15 +30,20 @@ interface CropToolStore {
   resetForNewImage: () => void;
 }
 
-export const useCropTool = create<CropToolStore>((set) => ({
-  ratio: 'original',
-  orientation: 'landscape',
-  autoRotationCrop: true,
-  setRatio: (r) => set({ ratio: r }),
-  toggleOrientation: () => set((s) => ({ orientation: s.orientation === 'landscape' ? 'portrait' : 'landscape' })),
-  setAutoRotationCrop: (v) => set({ autoRotationCrop: v }),
-  resetForNewImage: () => set({ autoRotationCrop: true, ratio: 'original' }),
-}));
+export const useCropTool = create<CropToolStore>()(
+  persist(
+    (set) => ({
+      ratio: 'original',
+      orientation: 'landscape',
+      autoRotationCrop: true,
+      setRatio: (r) => set({ ratio: r }),
+      toggleOrientation: () => set((s) => ({ orientation: s.orientation === 'landscape' ? 'portrait' : 'landscape' })),
+      setAutoRotationCrop: (v) => set({ autoRotationCrop: v }),
+      resetForNewImage: () => set({ autoRotationCrop: true, ratio: 'original' }),
+    }),
+    { name: 'lumix-crop-tool' },
+  ),
+);
 
 /**
  * Resolves a ratio preset + orientation to a concrete width/height pixel

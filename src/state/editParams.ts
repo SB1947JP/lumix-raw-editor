@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { DEFAULT_EDIT_PARAMS, EditParams } from '../types';
 
 interface EditParamsStore {
@@ -13,26 +14,36 @@ interface EditParamsStore {
   reset: () => void;
 }
 
-export const useEditParams = create<EditParamsStore>((set, get) => ({
-  params: { ...DEFAULT_EDIT_PARAMS },
-  history: [],
-  pendingSnapshot: null,
-  beginChange: () => {
-    if (!get().pendingSnapshot) {
-      set((state) => ({ pendingSnapshot: state.params }));
-    }
-  },
-  set: (key, value) =>
-    set((state) => ({
-      params: { ...state.params, [key]: value },
-      history: state.pendingSnapshot ? [...state.history, state.pendingSnapshot] : state.history,
+export const useEditParams = create<EditParamsStore>()(
+  persist(
+    (set, get) => ({
+      params: { ...DEFAULT_EDIT_PARAMS },
+      history: [],
       pendingSnapshot: null,
-    })),
-  undo: () =>
-    set((state) => {
-      if (state.history.length === 0) return state;
-      const previous = state.history[state.history.length - 1];
-      return { params: previous, history: state.history.slice(0, -1), pendingSnapshot: null };
+      beginChange: () => {
+        if (!get().pendingSnapshot) {
+          set((state) => ({ pendingSnapshot: state.params }));
+        }
+      },
+      set: (key, value) =>
+        set((state) => ({
+          params: { ...state.params, [key]: value },
+          history: state.pendingSnapshot ? [...state.history, state.pendingSnapshot] : state.history,
+          pendingSnapshot: null,
+        })),
+      undo: () =>
+        set((state) => {
+          if (state.history.length === 0) return state;
+          const previous = state.history[state.history.length - 1];
+          return { params: previous, history: state.history.slice(0, -1), pendingSnapshot: null };
+        }),
+      reset: () => set({ params: { ...DEFAULT_EDIT_PARAMS }, history: [], pendingSnapshot: null }),
     }),
-  reset: () => set({ params: { ...DEFAULT_EDIT_PARAMS }, history: [], pendingSnapshot: null }),
-}));
+    {
+      // Undo history is a within-session convenience, not something a reload
+      // should resurrect — only the current slider values survive a refresh.
+      name: 'lumix-edit-params',
+      partialize: (state) => ({ params: state.params }),
+    },
+  ),
+);

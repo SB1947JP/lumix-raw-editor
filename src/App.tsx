@@ -5,15 +5,19 @@ import { Sidebar } from './components/Sidebar';
 import { ExportButton } from './components/ExportButton';
 import { decodePreview, friendlyDecodeError, isSupportedRawFile } from './lib/rawDecoder';
 import { computeImageRgbHistogram, HistogramData } from './lib/histogram';
+import { loadSession, saveSession, clearSession } from './lib/sessionStore';
 import { JAPANESE_PALETTE } from './lib/palette';
 import { useEditParams } from './state/editParams';
 import { useCropTool } from './state/cropTool';
 import { DecodedImage, RawMetadata } from './types';
 
-type Status = 'empty' | 'loading' | 'ready' | 'error';
+// 'booting' is the brief window while the last session is being read from
+// IndexedDB — kept distinct from 'empty' so the dropzone doesn't flash on
+// screen for the ~10ms it takes to find out there's actually a file to restore.
+type Status = 'booting' | 'empty' | 'loading' | 'ready' | 'error';
 
 export default function App() {
-  const [status, setStatus] = useState<Status>('empty');
+  const [status, setStatus] = useState<Status>('booting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fileBytes, setFileBytes] = useState<Uint8Array<ArrayBuffer> | null>(null);
   const [fileName, setFileName] = useState<string>('');
@@ -39,6 +43,64 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [undo]);
 
+  // Shared by both a fresh file drop and a restored session. `isNewFile`
+  // gates whether edit params / crop state reset to defaults — a restore
+  // must leave them alone, since they were already repopulated from
+  // localStorage by zustand's `persist` middleware when the stores were
+  // created, and resetting here would silently wipe them back to defaults
+  // on every single page refresh.
+  const runDecode = useCallback(
+    async (name: string, bytes: Uint8Array<ArrayBuffer>, isNewFile: boolean) => {
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setStatus('loading');
+      setErrorMessage(null);
+      setLoadingFileName(name);
+      try {
+        const { image, metadata } = await decodePreview(bytes, controller.signal);
+        if (isNewFile) {
+          resetParams();
+          resetCropToolForNewImage();
+        }
+        setFileBytes(bytes);
+        setFileName(name);
+        setPreview(image);
+        setMetadata(metadata);
+        setStatus('ready');
+        void saveSession({ fileName: name, bytes });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setStatus('empty'); // user-initiated cancel — not a failure, no message
+          return;
+        }
+        // A corrupted or incompatible cached session shouldn't be able to
+        // wedge every future page load — clear it and fall back cleanly.
+        if (!isNewFile) void clearSession();
+        setErrorMessage(friendlyDecodeError(err));
+        setStatus('error');
+      } finally {
+        abortRef.current = null;
+      }
+    },
+    [resetParams, resetCropToolForNewImage],
+  );
+
+  // On mount, try to resume the last session instead of always starting at
+  // the empty dropzone — this is the actual fix for "refreshing loses the file."
+  useEffect(() => {
+    (async () => {
+      const session = await loadSession();
+      if (session) {
+        // IndexedDB's structured clone loses the specific ArrayBuffer-vs-
+        // SharedArrayBuffer type parameter, but the bytes were always written
+        // by saveSession() from a real ArrayBuffer-backed Uint8Array.
+        await runDecode(session.fileName, session.bytes as Uint8Array<ArrayBuffer>, false);
+      } else {
+        setStatus('empty');
+      }
+    })();
+  }, [runDecode]);
+
   const handleFile = useCallback(
     async (file: File) => {
       // Drag-and-drop bypasses the file input's `accept` filter (which only
@@ -50,35 +112,13 @@ export default function App() {
         setStatus('error');
         return;
       }
-
-      const controller = new AbortController();
-      abortRef.current = controller;
       setStatus('loading');
-      setErrorMessage(null);
       setLoadingFileName(file.name);
-      try {
-        const buf = await file.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        const { image, metadata } = await decodePreview(bytes, controller.signal);
-        resetParams();
-        resetCropToolForNewImage();
-        setFileBytes(bytes);
-        setFileName(file.name);
-        setPreview(image);
-        setMetadata(metadata);
-        setStatus('ready');
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          setStatus('empty'); // user-initiated cancel — not a failure, no message
-          return;
-        }
-        setErrorMessage(friendlyDecodeError(err));
-        setStatus('error');
-      } finally {
-        abortRef.current = null;
-      }
+      const buf = await file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      await runDecode(file.name, bytes, true);
     },
-    [resetParams, resetCropToolForNewImage],
+    [runDecode],
   );
 
   const handleCancelLoad = useCallback(() => {
