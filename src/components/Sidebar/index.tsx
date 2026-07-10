@@ -17,6 +17,15 @@ interface Props {
   image: DecodedImage;
 }
 
+// Aperture comes back as a float32 from LibRaw/EXIF, so a "clean" value like
+// f/2.8 is often stored as something like 2.799999952316284 — round to the
+// nearest tenth (the finest real f-stop granularity) and drop a trailing
+// ".0" so whole stops read as "f/8", not "f/8.0".
+function formatFStop(aperture: number): string {
+  const rounded = Math.round(aperture * 10) / 10;
+  return rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
+}
+
 export function Sidebar({ metadata, histogram, originalHistogram, image }: Props) {
   const reset = useEditParams((s) => s.reset);
   const undo = useEditParams((s) => s.undo);
@@ -30,7 +39,12 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
       {metadata && (
         <div className="mb-5 text-xs text-neutral-500">
           <div>{metadata.make} {metadata.model}</div>
-          {metadata.iso !== undefined && <div>ISO {metadata.iso} · f/{metadata.aperture} · 1/{metadata.shutter ? Math.round(1 / metadata.shutter) : '?'}s</div>}
+          {metadata.iso !== undefined && (
+            <div>
+              ISO {metadata.iso} · f/{metadata.aperture !== undefined ? formatFStop(metadata.aperture) : '?'} · 1/
+              {metadata.shutter ? Math.round(1 / metadata.shutter) : '?'}s
+            </div>
+          )}
         </div>
       )}
       <Basic image={image} />
