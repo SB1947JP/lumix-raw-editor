@@ -1,12 +1,31 @@
 import { CurvePoint } from '../types';
 
+const IDENTITY_CURVE: CurvePoint[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 1 },
+];
+
+/**
+ * Falls back to the identity line for anything that isn't a usable curve —
+ * not just defensive style, but a real safety net: this app persists curve
+ * points to localStorage, and a browser holding a persisted value from before
+ * this field existed (or any future malformed value) would otherwise hand
+ * `undefined`/a too-short array to the spline math below and crash the
+ * component with no error boundary to catch it, i.e. a blank white page.
+ */
+export function normalizeCurve(points: CurvePoint[] | undefined | null): CurvePoint[] {
+  if (!Array.isArray(points) || points.length < 2) return IDENTITY_CURVE;
+  return points;
+}
+
 /**
  * Monotone cubic (Fritsch–Carlson) interpolation of a set of curve control
  * points, sampled at the given input xs. Monotone specifically so a tone curve
  * never overshoots between nodes — a plain cubic spline can dip below a node
  * and invert local contrast, which reads as haloing/solarisation.
  */
-export function sampleCurve(points: CurvePoint[], xs: number[]): number[] {
+export function sampleCurve(pointsIn: CurvePoint[], xs: number[]): number[] {
+  const points = normalizeCurve(pointsIn);
   const n = points.length;
   const xa = points.map((p) => p.x);
   const ya = points.map((p) => p.y);
@@ -68,7 +87,8 @@ export function buildCurveLut(points: CurvePoint[]): Uint8Array {
 }
 
 /** True for the straight identity line — lets the shader skip the curve stage entirely. */
-export function isIdentityCurve(points: CurvePoint[]): boolean {
+export function isIdentityCurve(pointsIn: CurvePoint[] | undefined | null): boolean {
+  const points = normalizeCurve(pointsIn);
   return (
     points.length === 2 &&
     points[0].x === 0 &&
@@ -144,6 +164,7 @@ function samePoints(a: CurvePoint[], b: CurvePoint[]): boolean {
 }
 
 /** The preset matching the current points, or undefined (= "Custom"). */
-export function matchCurvePreset(points: CurvePoint[]): CurvePreset | undefined {
+export function matchCurvePreset(pointsIn: CurvePoint[] | undefined | null): CurvePreset | undefined {
+  const points = normalizeCurve(pointsIn);
   return CURVE_PRESETS.find((p) => samePoints(p.points, points));
 }

@@ -2,12 +2,15 @@ import { useEditParams } from '../../state/editParams';
 import { Section } from './Section';
 import { JAPANESE_PALETTE } from '../../lib/palette';
 import { CurveEditor } from '../CurveEditor';
-import { CURVE_PRESETS, matchCurvePreset, isIdentityCurve } from '../../lib/curve';
+import { CURVE_PRESETS, matchCurvePreset, isIdentityCurve, normalizeCurve } from '../../lib/curve';
 import { DEFAULT_EDIT_PARAMS } from '../../types';
 
 export function ToneCurve() {
   const { params, set, beginChange } = useEditParams();
-  const points = params.lumaCurve;
+  // Normalized so CurveEditor (which does plain array operations, not the
+  // guarded helpers in lib/curve.ts) never receives a missing/malformed value
+  // — see the merge fix in state/editParams.ts for why that could happen.
+  const points = normalizeCurve(params.lumaCurve);
   const matched = matchCurvePreset(points);
 
   return (

@@ -44,6 +44,21 @@ export const useEditParams = create<EditParamsStore>()(
       // should resurrect — only the current slider values survive a refresh.
       name: 'lumix-edit-params',
       partialize: (state) => ({ params: state.params }),
+      // zustand's default merge is `{...currentState, ...persistedState}`,
+      // which replaces `params` wholesale with whatever was persisted. That's
+      // fine until EditParams grows a field (as it did for the tone curve,
+      // colour grading, and AgX tone mapper, all added after this persistence
+      // feature shipped) — a browser with an older persisted blob then
+      // restores a `params` object missing those fields entirely, `undefined`
+      // reaches components expecting e.g. an array of curve points, and with
+      // no error boundary React unmounted the whole tree: a blank page with
+      // no error shown. Defaulting each field against DEFAULT_EDIT_PARAMS
+      // instead of replacing wholesale means an old persisted blob can only
+      // ever be missing fields, never provide `undefined` for them.
+      merge: (persisted, current) => ({
+        ...current,
+        params: { ...DEFAULT_EDIT_PARAMS, ...(persisted as { params?: Partial<EditParams> } | undefined)?.params },
+      }),
     },
   ),
 );
