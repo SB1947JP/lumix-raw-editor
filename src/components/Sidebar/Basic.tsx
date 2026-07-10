@@ -11,9 +11,11 @@ import { DecodedImage, DEFAULT_EDIT_PARAMS } from '../../types';
 
 interface Props {
   image: DecodedImage;
+  forceOpenSignal?: number;
+  forceOpenValue?: boolean;
 }
 
-export function Basic({ image }: Props) {
+export function Basic({ image, forceOpenSignal, forceOpenValue }: Props) {
   const { params, set, beginChange } = useEditParams();
   // Purely a display preference (decluttering, not an edit) — session-local
   // rather than persisted, so it doesn't grow EditParams's schema (that
@@ -44,7 +46,7 @@ export function Basic({ image }: Props) {
   };
 
   return (
-    <Section title="Basic" color={JAPANESE_PALETTE.shuiro}>
+    <Section title="Basic" color={JAPANESE_PALETTE.shuiro} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <div className="mb-3">
         <div className="text-xs text-neutral-400 mb-1">Tone Mapper</div>
         <select

@@ -3,10 +3,15 @@ import { SliderRow } from '../SliderRow';
 import { Section } from './Section';
 import { JAPANESE_PALETTE } from '../../lib/palette';
 
-export function Tone() {
+interface Props {
+  forceOpenSignal?: number;
+  forceOpenValue?: boolean;
+}
+
+export function Tone({ forceOpenSignal, forceOpenValue }: Props) {
   const { params, set } = useEditParams();
   return (
-    <Section title="Tone" color={JAPANESE_PALETTE.yamabukiiro}>
+    <Section title="Tone" color={JAPANESE_PALETTE.yamabukiiro} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <SliderRow label="Highlights" value={params.highlights} min={-100} max={100} onChange={(v) => set('highlights', v)} />
       <SliderRow label="Shadows" value={params.shadows} min={-100} max={100} onChange={(v) => set('shadows', v)} />
       <SliderRow label="Whites" value={params.whites} min={-100} max={100} onChange={(v) => set('whites', v)} />

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useEditParams } from '../../state/editParams';
 import { DecodedImage, RawMetadata } from '../../types';
 import { HistogramData } from '../../lib/histogram';
@@ -30,6 +31,18 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
   const undo = useEditParams((s) => s.undo);
   const canUndo = useEditParams((s) => s.history.length > 0);
 
+  // Most sections start expanded (Colour Grading is the one exception), so
+  // the toggle's own label assumes that's the current state; clicking forces
+  // every section to the opposite of `allOpen` via the signal/value pair
+  // below (see Section.tsx), then flips both the label and what the *next*
+  // click will do.
+  const [allOpen, setAllOpen] = useState(true);
+  const [toggleSignal, setToggleSignal] = useState(0);
+  const handleToggleAll = () => {
+    setAllOpen((v) => !v);
+    setToggleSignal((s) => s + 1);
+  };
+
   return (
     <div className="w-full sm:w-72 shrink-0 h-[45vh] sm:h-full overflow-y-auto overscroll-contain bg-neutral-900 border-t sm:border-t-0 sm:border-l border-neutral-800 p-3 sm:p-4">
       <div className="mb-4">
@@ -46,12 +59,23 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
           )}
         </div>
       )}
-      <Basic image={image} />
-      <Tone />
-      <Color />
-      <Grading />
-      <Detail />
-      <Geometry imageWidth={image.width} imageHeight={image.height} />
+      <button
+        onClick={handleToggleAll}
+        className="mb-4 w-full text-xs text-neutral-400 border border-neutral-700 rounded py-1.5 hover:bg-neutral-900"
+      >
+        {allOpen ? 'Hide' : 'Show'} All
+      </button>
+      <Basic image={image} forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Tone forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Color forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Grading forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Detail forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Geometry
+        imageWidth={image.width}
+        imageHeight={image.height}
+        forceOpenSignal={toggleSignal}
+        forceOpenValue={allOpen}
+      />
       <div className="mt-2 flex gap-2">
         <button
           onClick={undo}

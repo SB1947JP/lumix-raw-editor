@@ -6,10 +6,26 @@ interface Props {
   children: ReactNode;
   /** Whether the section starts expanded (default true). */
   defaultOpen?: boolean;
+  /** Bump this (e.g. a counter) to force `open` to `forceOpenValue` — used by
+   *  a global "Show/Hide All" control. Left undefined, the section is purely
+   *  self-managed as before. */
+  forceOpenSignal?: number;
+  forceOpenValue?: boolean;
 }
 
-export function Section({ title, color, children, defaultOpen = true }: Props) {
+export function Section({ title, color, children, defaultOpen = true, forceOpenSignal, forceOpenValue }: Props) {
   const [open, setOpen] = useState(defaultOpen);
+  // Sync `open` to an external "force all sections open/closed" signal without
+  // remounting the section (a key-based remount would also wipe out any other
+  // local state living alongside it, e.g. Basic's own show/hide toggle) — this
+  // is React's documented "adjust state during render when a prop changes"
+  // pattern: compare against the previous signal value and call setState
+  // directly in render, which re-renders immediately with no flicker/effect.
+  const [lastSignal, setLastSignal] = useState(forceOpenSignal);
+  if (forceOpenSignal !== undefined && forceOpenSignal !== lastSignal) {
+    setLastSignal(forceOpenSignal);
+    setOpen(forceOpenValue ?? true);
+  }
 
   return (
     <div className="mb-5">

@@ -11,6 +11,8 @@ const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
 interface Props {
   imageWidth: number;
   imageHeight: number;
+  forceOpenSignal?: number;
+  forceOpenValue?: boolean;
 }
 
 /** Reshapes a crop rect to a locked aspect ratio, keeping its center fixed. */
@@ -28,7 +30,7 @@ function reshapeToRatio(crop: CropRect, lockedAspect: number, imageWidth: number
   return { x, y, width, height };
 }
 
-export function Geometry({ imageWidth, imageHeight }: Props) {
+export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenValue }: Props) {
   const { params, set, beginChange } = useEditParams();
   const { ratio, orientation, autoRotationCrop, setRatio, toggleOrientation, setAutoRotationCrop } = useCropTool();
   const crop = params.crop ?? FULL_CROP;
@@ -65,7 +67,7 @@ export function Geometry({ imageWidth, imageHeight }: Props) {
   };
 
   return (
-    <Section title="Geometry" color={JAPANESE_PALETTE.fujiiro}>
+    <Section title="Geometry" color={JAPANESE_PALETTE.fujiiro} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <SliderRow label="Rotation" value={params.rotation} min={-45} max={45} step={0.1} onChange={handleRotationChange} />
       <label className="flex items-center gap-2 text-xs text-neutral-400 mb-3 select-none">
         <input

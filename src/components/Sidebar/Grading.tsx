@@ -52,9 +52,20 @@ function GradeRange({ title, hueKey, strKey }: RangeProps) {
   );
 }
 
-export function Grading() {
+interface Props {
+  forceOpenSignal?: number;
+  forceOpenValue?: boolean;
+}
+
+export function Grading({ forceOpenSignal, forceOpenValue }: Props) {
   return (
-    <Section title="Colour Grading" color={JAPANESE_PALETTE.nakabeni} defaultOpen={false}>
+    <Section
+      title="Colour Grading"
+      color={JAPANESE_PALETTE.nakabeni}
+      defaultOpen={false}
+      forceOpenSignal={forceOpenSignal}
+      forceOpenValue={forceOpenValue}
+    >
       <GradeRange title="Shadows" hueKey="gradeShadowHue" strKey="gradeShadowStr" />
       <GradeRange title="Midtones" hueKey="gradeMidHue" strKey="gradeMidStr" />
       <GradeRange title="Highlights" hueKey="gradeHighlightHue" strKey="gradeHighlightStr" />
