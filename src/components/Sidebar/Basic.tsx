@@ -72,6 +72,13 @@ export function Basic({ image }: Props) {
 
       {showAutoAndCurve && (
         <>
+          <button
+            onClick={handleAutoLevels}
+            className="mb-3 w-full text-xs text-neutral-300 border border-neutral-700 rounded py-1.5 hover:bg-neutral-800"
+          >
+            Auto Levels
+          </button>
+
           <div className="mb-3">
             <div className="text-xs text-neutral-400 mb-1">Tone Curve</div>
             <div className="flex items-center gap-2 mb-2">
@@ -119,13 +126,6 @@ export function Basic({ image }: Props) {
               Drag to bend · click to add a point · double-click a point to remove
             </p>
           </div>
-
-          <button
-            onClick={handleAutoLevels}
-            className="mb-3 w-full text-xs text-neutral-300 border border-neutral-700 rounded py-1.5 hover:bg-neutral-800"
-          >
-            Auto Levels
-          </button>
         </>
       )}
 
