@@ -28,6 +28,10 @@ function toPoints(buckets: Uint32Array, max: number): string {
 
 export function Histogram({ before, after }: Props) {
   const [mode, setMode] = useState<Mode>('after');
+  // Purely a display preference, not an edit — session-local rather than
+  // persisted (see Basic.tsx's showAutoAndCurve for why: growing EditParams's
+  // schema is what caused the blank-page restore bug).
+  const [visible, setVisible] = useState(true);
   const data = mode === 'before' ? before : after;
 
   // One shared max across R/G/B so the channels are comparable — this is what
@@ -40,61 +44,74 @@ export function Histogram({ before, after }: Props) {
 
   return (
     <div>
-      {data ? (
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-16 w-full rounded bg-neutral-950">
-          {TICKS.slice(1, -1).map((t) => (
-            <line
-              key={t}
-              x1={(t / 255) * 100}
-              y1={0}
-              x2={(t / 255) * 100}
-              y2={100}
-              stroke="#3f3f46"
-              strokeWidth={0.4}
-            />
-          ))}
-          <polyline
-            points={`0,100 ${toPoints(data.luma, max)} 100,100`}
-            fill="#a3a3a3"
-            fillOpacity={0.18}
-            stroke="none"
-          />
-          {CHANNELS.map(({ key, color }) => (
-            <polyline
-              key={key}
-              points={`0,100 ${toPoints(data[key], max)} 100,100`}
-              fill={color}
-              fillOpacity={0.3}
-              stroke={color}
-              strokeOpacity={0.6}
-              strokeWidth={0.5}
-              style={{ mixBlendMode: 'screen' }}
-            />
-          ))}
-        </svg>
-      ) : (
-        <div className="h-16 w-full rounded bg-neutral-950" />
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Histogram</span>
+        <button
+          onClick={() => setVisible((v) => !v)}
+          className="text-[10px] text-neutral-500 hover:text-neutral-300"
+        >
+          {visible ? 'Hide' : 'Show'}
+        </button>
+      </div>
+      {visible && (
+        <>
+          {data ? (
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-32 w-full rounded bg-neutral-950">
+              {TICKS.slice(1, -1).map((t) => (
+                <line
+                  key={t}
+                  x1={(t / 255) * 100}
+                  y1={0}
+                  x2={(t / 255) * 100}
+                  y2={100}
+                  stroke="#3f3f46"
+                  strokeWidth={0.4}
+                />
+              ))}
+              <polyline
+                points={`0,100 ${toPoints(data.luma, max)} 100,100`}
+                fill="#a3a3a3"
+                fillOpacity={0.12}
+                stroke="none"
+              />
+              {CHANNELS.map(({ key, color }) => (
+                <polyline
+                  key={key}
+                  points={`0,100 ${toPoints(data[key], max)} 100,100`}
+                  fill={color}
+                  fillOpacity={0.35}
+                  stroke={color}
+                  strokeOpacity={0.9}
+                  strokeWidth={0.9}
+                  style={{ mixBlendMode: 'screen' }}
+                />
+              ))}
+            </svg>
+          ) : (
+            <div className="h-32 w-full rounded bg-neutral-950" />
+          )}
+          <div className="flex justify-between mt-0.5 px-0.5 text-[9px] tabular-nums text-neutral-600">
+            {TICKS.map((t) => (
+              <span key={t}>{t}</span>
+            ))}
+          </div>
+          <div className="flex mt-1 gap-1">
+            {(['before', 'after'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className="flex-1 py-0.5 rounded text-[10px] uppercase tracking-wide font-medium"
+                style={{
+                  color: mode === m ? TAB_COLORS[m] : '#71717a',
+                  backgroundColor: mode === m ? `${TAB_COLORS[m]}22` : 'transparent',
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </>
       )}
-      <div className="flex justify-between mt-0.5 px-0.5 text-[9px] tabular-nums text-neutral-600">
-        {TICKS.map((t) => (
-          <span key={t}>{t}</span>
-        ))}
-      </div>
-      <div className="flex mt-1 gap-1">
-        {(['before', 'after'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className="flex-1 py-0.5 rounded text-[10px] uppercase tracking-wide font-medium"
-            style={{
-              color: mode === m ? TAB_COLORS[m] : '#71717a',
-              backgroundColor: mode === m ? `${TAB_COLORS[m]}22` : 'transparent',
-            }}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
