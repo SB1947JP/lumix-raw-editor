@@ -20,6 +20,9 @@ uniform float uBlacks;      // -100..100
 uniform mat3 uWbMatrix;     // linear-sRGB chromatic adaptation (CAT16) matrix,
                             // precomputed on the CPU from the Planckian-locus
                             // temperature/tint model
+uniform int uTonemapMode;   // 0 = classic knee/shoulder pipeline, 1 = AgX
+uniform mat3 uAgxPipeToRendering; // constant AgX inset matrix (see lib/agx.ts)
+uniform mat3 uAgxRenderingToPipe; // constant AgX outset matrix
 uniform float uSaturation;  // -100..100
 uniform float uVibrance;    // -100..100
 uniform float uSharpen;     // 0..100
@@ -86,6 +89,69 @@ vec3 highlightShoulder(vec3 c, float knee) {
   float ceil = 1.0 - knee;
   float mNew = knee + ceil * excess / (excess + ceil);
   return c * (mNew / m);
+}
+
+// --- AgX tone mapper ---------------------------------------------------------
+// A faithful port of RapidRAW's AgX implementation (github.com/CyberTimon/
+// RapidRAW, src-tauri/src/shaders/shader.wgsl), itself the standard "community
+// AgX" construction that traces back to Blender's AgX view transform: convert
+// to a working space inset toward a rotated, scaled-down Rec.2020 (so the
+// curve below operates in a deliberately narrower gamut — the reason
+// extremely bright saturated colours desaturate gracefully toward white
+// instead of clipping to a hard magenta/cyan), apply a log2-encoded per-channel
+// sigmoid with a toe and shoulder, then transform back out ("outset").
+// uAgxPipeToRendering/uAgxRenderingToPipe are the two constant matrices for
+// that in/out step, computed once on the CPU (see lib/agx.ts) since they don't
+// depend on any slider.
+const float AGX_MIN_EV = -15.2;
+const float AGX_MAX_EV = 5.0;
+const float AGX_RANGE_EV = AGX_MAX_EV - AGX_MIN_EV;
+const float AGX_GAMMA = 2.4;
+const float AGX_SLOPE = 2.3843;
+const float AGX_TOE_POWER = 1.5;
+const float AGX_SHOULDER_POWER = 1.5;
+const float AGX_TOE_TRANSITION_X = 0.6060606;
+const float AGX_TOE_TRANSITION_Y = 0.43446;
+const float AGX_SHOULDER_TRANSITION_X = 0.6060606;
+const float AGX_SHOULDER_TRANSITION_Y = 0.43446;
+const float AGX_INTERCEPT = -1.0112;
+const float AGX_TOE_SCALE = -1.0359;
+const float AGX_SHOULDER_SCALE = 1.3475;
+
+float agxSigmoid(float x, float power) {
+  return x / pow(1.0 + pow(x, power), 1.0 / power);
+}
+float agxScaledSigmoid(float x, float scale, float slope, float power, float transitionX, float transitionY) {
+  return scale * agxSigmoid(slope * (x - transitionX) / scale, power) + transitionY;
+}
+float agxApplyCurveChannel(float x) {
+  float result;
+  if (x < AGX_TOE_TRANSITION_X) {
+    result = agxScaledSigmoid(x, AGX_TOE_SCALE, AGX_SLOPE, AGX_TOE_POWER, AGX_TOE_TRANSITION_X, AGX_TOE_TRANSITION_Y);
+  } else if (x <= AGX_SHOULDER_TRANSITION_X) {
+    result = AGX_SLOPE * x + AGX_INTERCEPT;
+  } else {
+    result = agxScaledSigmoid(x, AGX_SHOULDER_SCALE, AGX_SLOPE, AGX_SHOULDER_POWER, AGX_SHOULDER_TRANSITION_X, AGX_SHOULDER_TRANSITION_Y);
+  }
+  return clamp(result, 0.0, 1.0);
+}
+vec3 agxCompressGamut(vec3 c) {
+  float minC = min(c.r, min(c.g, c.b));
+  if (minC < 0.0) return c - minC;
+  return c;
+}
+vec3 agxTonemap(vec3 c) {
+  vec3 xRelative = max(c / 0.18, vec3(1.0e-6));
+  vec3 logEncoded = (log2(xRelative) - AGX_MIN_EV) / AGX_RANGE_EV;
+  vec3 mapped = clamp(logEncoded, 0.0, 1.0);
+  vec3 curved = vec3(agxApplyCurveChannel(mapped.r), agxApplyCurveChannel(mapped.g), agxApplyCurveChannel(mapped.b));
+  return pow(max(curved, 0.0), vec3(AGX_GAMMA));
+}
+vec3 agxFullTransform(vec3 colorIn) {
+  vec3 compressed = agxCompressGamut(colorIn);
+  vec3 inRenderingSpace = uAgxPipeToRendering * compressed;
+  vec3 tonemapped = agxTonemap(inRenderingSpace);
+  return uAgxRenderingToPipe * tonemapped;
 }
 
 // Softens a slider's response near zero: signed-square keeps the full effect
@@ -328,17 +394,24 @@ void main() {
   // gains in the sRGB primaries.
   linearColor = uWbMatrix * linearColor;
 
-  // Roll off blown highlights with the capped log-logistic shoulder (the
-  // shoulder of darktable's sigmoid tone curve) while still in linear light,
-  // applied as an RGB ratio so the rolloff holds colour instead of washing to
-  // grey. The knee starts at 1.0 (shoulder fully inert) so at rest the decoded
-  // image passes through untouched and true white still reaches 255 — no
-  // resting compression. As exposure is pushed the knee drops toward 0.65, so
-  // the shoulder engages automatically and boosted highlights roll off
-  // smoothly to white without any channel ever hard-clipping.
-  float exposureAmount = clamp(uExposure / 3.0, 0.0, 1.0);
-  float knee = mix(1.0, 0.65, exposureAmount);
-  linearColor = highlightShoulder(linearColor, knee);
+  if (uTonemapMode == 1) {
+    // AgX: a full scene-linear filmic view transform (see agxFullTransform
+    // above) replaces the knee/shoulder entirely — it already handles the
+    // full tonal range, so there is no separate exposure-gated knee to gate.
+    linearColor = agxFullTransform(linearColor);
+  } else {
+    // Roll off blown highlights with the capped log-logistic shoulder (the
+    // shoulder of darktable's sigmoid tone curve) while still in linear light,
+    // applied as an RGB ratio so the rolloff holds colour instead of washing to
+    // grey. The knee starts at 1.0 (shoulder fully inert) so at rest the decoded
+    // image passes through untouched and true white still reaches 255 — no
+    // resting compression. As exposure is pushed the knee drops toward 0.65, so
+    // the shoulder engages automatically and boosted highlights roll off
+    // smoothly to white without any channel ever hard-clipping.
+    float exposureAmount = clamp(uExposure / 3.0, 0.0, 1.0);
+    float knee = mix(1.0, 0.65, exposureAmount);
+    linearColor = highlightShoulder(linearColor, knee);
+  }
   color = linearToSrgb(linearColor);
 
   // Brightness lifts/lowers midtones via a gamma curve on luma (0 and 1 stay

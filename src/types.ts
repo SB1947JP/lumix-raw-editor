@@ -36,7 +36,10 @@ export interface CurvePoint {
   y: number;
 }
 
+export type TonemapMode = 'classic' | 'agx';
+
 export interface EditParams {
+  tonemapMode: TonemapMode;
   exposure: number; // stops, -5..5
   brightness: number; // -100..100
   contrast: number; // -100..100
@@ -63,6 +66,7 @@ export interface EditParams {
 }
 
 export const DEFAULT_EDIT_PARAMS: EditParams = {
+  tonemapMode: 'classic',
   exposure: 0,
   brightness: 0,
   contrast: 0,

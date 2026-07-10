@@ -4,6 +4,7 @@ import { DecodedImage, EditParams } from '../types';
 import { getEffectiveDimensions } from '../lib/geometry';
 import { computeWbMatrix } from '../lib/whiteBalance';
 import { buildCurveLut, isIdentityCurve } from '../lib/curve';
+import { AGX_PIPE_TO_RENDERING_MATRIX, AGX_RENDERING_TO_PIPE_MATRIX } from '../lib/agx';
 import { CurvePoint } from '../types';
 
 function compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
@@ -56,6 +57,7 @@ const UNIFORM_NAMES = [
   'uWhites', 'uBlacks', 'uWbMatrix', 'uSaturation', 'uVibrance',
   'uSharpen', 'uGradeShadows', 'uGradeMid', 'uGradeHighlights',
   'uCurveLut', 'uCurveActive',
+  'uTonemapMode', 'uAgxPipeToRendering', 'uAgxRenderingToPipe',
   'uCropScale', 'uCropOffset', 'uRotation',
 ] as const;
 
@@ -224,6 +226,10 @@ export class RawRenderer {
     gl.uniform1f(this.uniforms.uSaturation!, params.saturation);
     gl.uniform1f(this.uniforms.uVibrance!, params.vibrance);
     gl.uniform1f(this.uniforms.uSharpen!, params.sharpen);
+
+    gl.uniform1i(this.uniforms.uTonemapMode!, params.tonemapMode === 'agx' ? 1 : 0);
+    gl.uniformMatrix3fv(this.uniforms.uAgxPipeToRendering!, false, AGX_PIPE_TO_RENDERING_MATRIX);
+    gl.uniformMatrix3fv(this.uniforms.uAgxRenderingToPipe!, false, AGX_RENDERING_TO_PIPE_MATRIX);
 
     const [shA, shB] = gradeAB(params.gradeShadowHue, params.gradeShadowStr);
     const [miA, miB] = gradeAB(params.gradeMidHue, params.gradeMidStr);

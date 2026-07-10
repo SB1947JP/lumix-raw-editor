@@ -26,6 +26,21 @@ export function Basic({ image }: Props) {
 
   return (
     <Section title="Basic" color={JAPANESE_PALETTE.shuiro}>
+      <div className="mb-3">
+        <div className="text-xs text-neutral-400 mb-1">Tone Mapper</div>
+        <select
+          value={params.tonemapMode}
+          onChange={(e) => {
+            beginChange();
+            set('tonemapMode', e.target.value as typeof params.tonemapMode);
+          }}
+          title="How highlights roll off to white. AgX (Blender's filmic view transform) desaturates extreme highlights gracefully toward white instead of clipping to a harsh colour."
+          className="w-full bg-neutral-950 border border-neutral-700 rounded text-xs text-neutral-300 py-1 px-2"
+        >
+          <option value="classic">Classic</option>
+          <option value="agx">AgX (filmic)</option>
+        </select>
+      </div>
       <button
         onClick={handleAutoLevels}
         className="mb-3 w-full text-xs text-neutral-300 border border-neutral-700 rounded py-1.5 hover:bg-neutral-800"
