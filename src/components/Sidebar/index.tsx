@@ -13,7 +13,7 @@ interface Props {
   metadata: RawMetadata | null;
   histogram: HistogramData | null;
   originalHistogram: HistogramData | null;
-  image: DecodedImage;
+  image: DecodedImage | null;
 }
 
 // Aperture comes back as a float32 from LibRaw/EXIF, so a "clean" value like
@@ -71,8 +71,8 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
       <Color forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
       <Detail forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
       <Geometry
-        imageWidth={image.width}
-        imageHeight={image.height}
+        imageWidth={image?.width ?? null}
+        imageHeight={image?.height ?? null}
         forceOpenSignal={toggleSignal}
         forceOpenValue={allOpen}
       />

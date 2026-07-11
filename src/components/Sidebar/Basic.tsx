@@ -10,7 +10,7 @@ import { CURVE_PRESETS, matchCurvePreset, isIdentityCurve, normalizeCurve } from
 import { DecodedImage, DEFAULT_EDIT_PARAMS } from '../../types';
 
 interface Props {
-  image: DecodedImage;
+  image: DecodedImage | null;
   forceOpenSignal?: number;
   forceOpenValue?: boolean;
 }
@@ -34,6 +34,7 @@ export function Basic({ image, forceOpenSignal, forceOpenValue }: Props) {
   const matchedCurve = matchCurvePreset(curvePoints);
 
   const handleAutoLevels = () => {
+    if (!image) return;
     const { exposure, blacks } = computeAutoLevels(image, params.tonemapMode);
     beginChange();
     set('exposure', exposure);
@@ -76,7 +77,9 @@ export function Basic({ image, forceOpenSignal, forceOpenValue }: Props) {
         <>
           <button
             onClick={handleAutoLevels}
-            className="mb-3 w-full text-xs text-neutral-300 border border-neutral-700 rounded py-1.5 hover:bg-neutral-800"
+            disabled={!image}
+            title={image ? undefined : 'Open a RAW file to use Auto Levels'}
+            className="mb-3 w-full text-xs text-neutral-300 border border-neutral-700 rounded py-1.5 hover:bg-neutral-800 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
           >
             Auto Levels
           </button>

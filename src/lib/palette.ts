@@ -9,4 +9,5 @@ export const JAPANESE_PALETTE = {
   wakatakeiro: '#789381', // 若竹色 — young bamboo green, muted
   fujiiro: '#89849B', // 藤色 — wisteria purple, muted
   edocha: '#9C7A5B', // 江戸茶 — muted Edo brown, for the Tone Curve section
+  enjiiro: '#A15C56', // 臙脂色 — muted carmine/crimson, for destructive actions
 } as const;

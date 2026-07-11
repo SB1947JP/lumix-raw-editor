@@ -126,8 +126,22 @@ export default function App() {
     abortRef.current?.abort();
   }, []);
 
+  // Forgets the current file entirely — clears the persisted session too, so
+  // a refresh doesn't bring it back (unlike "Open file", which just returns
+  // to the dropzone without discarding anything, in case the user cancels).
+  const handleDeleteFile = useCallback(async () => {
+    await clearSession();
+    setFileBytes(null);
+    setFileName('');
+    setPreview(null);
+    setMetadata(null);
+    setHistogram(null);
+    setStatus('empty');
+  }, []);
+
   const handleHistogram = useCallback((h: HistogramData) => setHistogram(h), []);
   const originalHistogram = useMemo(() => (preview ? computeImageRgbHistogram(preview) : null), [preview]);
+  const hasImage = status === 'ready' && preview !== null;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-neutral-950">
@@ -141,6 +155,13 @@ export default function App() {
               style={{ borderColor: JAPANESE_PALETTE.asagiiro, color: JAPANESE_PALETTE.asagiiro }}
             >
               Open file
+            </button>
+            <button
+              onClick={handleDeleteFile}
+              className="px-2 py-1 text-[11px] sm:text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
+              style={{ borderColor: JAPANESE_PALETTE.enjiiro, color: JAPANESE_PALETTE.enjiiro }}
+            >
+              Delete file
             </button>
             <ExportButton fileBytes={fileBytes} fileName={fileName} params={params} />
           </div>
@@ -181,14 +202,12 @@ export default function App() {
             <ImageViewer image={preview} params={params} onHistogram={handleHistogram} />
           )}
         </main>
-        {status === 'ready' && preview && (
-          <Sidebar
-            metadata={metadata}
-            histogram={histogram}
-            originalHistogram={originalHistogram}
-            image={preview}
-          />
-        )}
+        <Sidebar
+          metadata={hasImage ? metadata : null}
+          histogram={hasImage ? histogram : null}
+          originalHistogram={hasImage ? originalHistogram : null}
+          image={hasImage ? preview : null}
+        />
       </div>
     </div>
   );

@@ -8,10 +8,11 @@ interface Props {
   max: number;
   step?: number;
   defaultValue?: number;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }
 
-export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, onChange }: Props) {
+export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, disabled = false, onChange }: Props) {
   const beginChange = useEditParams((s) => s.beginChange);
 
   const handleReset = () => {
@@ -35,7 +36,7 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
   const tickPct = ((defaultValue - min) / (max - min)) * 100;
 
   return (
-    <label className="block mb-3 text-xs text-neutral-400 select-none">
+    <label className={`block mb-3 text-xs text-neutral-400 select-none ${disabled ? 'opacity-40' : ''}`}>
       <div className="flex justify-between mb-1">
         <span>{label}</span>
         <span className="text-neutral-500 tabular-nums">{value}</span>
@@ -56,11 +57,12 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
           max={max}
           step={step}
           value={value}
+          disabled={disabled}
           onPointerDown={handlePointerDown}
           onChange={(e) => onChange(Number(e.target.value))}
           onDoubleClick={handleReset}
           title={`Double-click to reset to ${defaultValue}`}
-          className="relative w-full"
+          className="relative w-full disabled:cursor-not-allowed"
         />
       </div>
     </label>
