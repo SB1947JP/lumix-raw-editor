@@ -146,19 +146,19 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-screen bg-neutral-950">
       <header className="flex items-center justify-between gap-2 px-3 py-2 sm:px-4 border-b border-neutral-800 shrink-0">
-        <Logo className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
+        <Logo className="w-8 h-8 shrink-0" />
         {status === 'ready' && fileBytes && (
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => setStatus('empty')}
-              className="px-2 py-1 text-[11px] sm:text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
+              className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
               style={{ borderColor: JAPANESE_PALETTE.asagiiro, color: JAPANESE_PALETTE.asagiiro }}
             >
               Open file
             </button>
             <button
               onClick={handleDeleteFile}
-              className="px-2 py-1 text-[11px] sm:text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
+              className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
               style={{ borderColor: JAPANESE_PALETTE.enjiiro, color: JAPANESE_PALETTE.enjiiro }}
             >
               Delete file

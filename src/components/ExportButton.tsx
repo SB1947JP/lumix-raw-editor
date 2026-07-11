@@ -81,7 +81,7 @@ export function ExportButton({ fileBytes, fileName, params }: Props) {
       <button
         onClick={handleExport}
         disabled={exporting}
-        className="px-2.5 py-1 text-xs rounded border font-medium disabled:opacity-50 hover:bg-neutral-900"
+        className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium disabled:opacity-50 hover:bg-neutral-900 whitespace-nowrap"
         style={{ borderColor: JAPANESE_PALETTE.shuiro, color: JAPANESE_PALETTE.shuiro }}
       >
         {exporting ? 'Exporting…' : 'Export JPEG'}
