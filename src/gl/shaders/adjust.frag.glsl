@@ -295,7 +295,13 @@ vec3 applySaturationVibrance(vec3 c, float saturation, float vibrance) {
 void main() {
   vec3 color = texture(uImage, vTexCoord).rgb;
 
-  if (uSharpen > 0.0) {
+  // Unconditional rather than gated behind `if (uSharpen > 0.0)`: a dynamic
+  // branch wrapping this many dependent texture fetches is a known trouble
+  // spot for mobile GPU drivers (observed as sharpening silently having no
+  // effect at all on iOS Safari) — the branch is a pure optimization anyway,
+  // since the contribution below already multiplies out to exactly zero at
+  // uSharpen = 0.
+  {
     vec3 n  = texture(uImage, vTexCoord + vec2(0.0, -uTexelSize.y)).rgb;
     vec3 s  = texture(uImage, vTexCoord + vec2(0.0,  uTexelSize.y)).rgb;
     vec3 e  = texture(uImage, vTexCoord + vec2( uTexelSize.x, 0.0)).rgb;

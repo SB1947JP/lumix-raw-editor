@@ -1,4 +1,4 @@
-import { PointerEvent as ReactPointerEvent } from 'react';
+import { PointerEvent as ReactPointerEvent, useRef } from 'react';
 import { useEditParams } from '../state/editParams';
 
 interface Props {
@@ -14,6 +14,11 @@ interface Props {
 
 export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, disabled = false, onChange }: Props) {
   const beginChange = useEditParams((s) => s.beginChange);
+  // Native dblclick is unreliable here: it's mouse-only (never fires for a
+  // double-tap on touch/pen), and doesn't play well with setPointerCapture
+  // below. Detecting the double-press ourselves (same pattern as
+  // CurveEditor's reset-on-double-click) works uniformly across input types.
+  const lastDownRef = useRef(0);
 
   const handleReset = () => {
     if (value === defaultValue) return;
@@ -22,6 +27,16 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
   };
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLInputElement>) => {
+    const now = Date.now();
+    const isDoubleClick = now - lastDownRef.current < 300;
+    lastDownRef.current = now;
+    if (isDoubleClick) {
+      // Stop the native range input from also jumping the value to this
+      // click's position before our reset applies.
+      e.preventDefault();
+      handleReset();
+      return;
+    }
     // Capture the pointer so every subsequent move is delivered to this slider
     // even if the finger/Pencil drifts off it — otherwise iPadOS can hand a
     // straying drag to page-scroll or Scribble mid-adjustment.
@@ -60,8 +75,7 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
           disabled={disabled}
           onPointerDown={handlePointerDown}
           onChange={(e) => onChange(Number(e.target.value))}
-          onDoubleClick={handleReset}
-          title={`Double-click to reset to ${defaultValue}`}
+          title={`Double-click/tap to reset to ${defaultValue}`}
           className="relative w-full disabled:cursor-not-allowed"
         />
       </div>
