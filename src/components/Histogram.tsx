@@ -56,7 +56,7 @@ export function Histogram({ before, after }: Props) {
       {visible && (
         <>
           {data ? (
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-32 w-full rounded bg-neutral-950">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-20 sm:h-32 w-full rounded bg-neutral-950">
               {TICKS.slice(1, -1).map((t) => (
                 <line
                   key={t}
@@ -88,7 +88,7 @@ export function Histogram({ before, after }: Props) {
               ))}
             </svg>
           ) : (
-            <div className="h-32 w-full rounded bg-neutral-950" />
+            <div className="h-20 sm:h-32 w-full rounded bg-neutral-950" />
           )}
           <div className="flex justify-between mt-0.5 px-0.5 text-[9px] tabular-nums text-neutral-600">
             {TICKS.map((t) => (

@@ -105,7 +105,7 @@ export function CurveEditor({ points, onChange, onBeginChange }: Props) {
       ref={svgRef}
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
-      className="w-full aspect-square rounded bg-neutral-950 touch-none select-none"
+      className="w-full h-40 sm:h-auto sm:aspect-square rounded bg-neutral-950 touch-none select-none"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
