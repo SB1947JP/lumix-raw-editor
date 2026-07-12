@@ -1,4 +1,4 @@
-import { PointerEvent as ReactPointerEvent, useRef } from 'react';
+import { PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
 import { useEditParams } from '../state/editParams';
 
 interface Props {
@@ -19,6 +19,18 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
   // below. Detecting the double-press ourselves (same pattern as
   // CurveEditor's reset-on-double-click) works uniformly across input types.
   const lastDownRef = useRef(0);
+
+  // Editable numeric field state. While focused it holds the user's raw
+  // keystrokes (so transient states like "-" or "1." feel natural) instead of
+  // the clamped/snapped number; the real value is only committed on blur/Enter.
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const cancelRef = useRef(false);
+
+  // Number of decimals the step implies (step 1 → 0, step 0.05 → 2), used to
+  // both snap typed input to the slider's own granularity and format display.
+  const decimals = (String(step).split('.')[1] || '').length;
+  const format = (v: number) => String(parseFloat(v.toFixed(decimals)));
 
   const handleReset = () => {
     if (value === defaultValue) return;
@@ -44,6 +56,21 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
     beginChange();
   };
 
+  const commitDraft = () => {
+    setEditing(false);
+    if (cancelRef.current) {
+      cancelRef.current = false;
+      return;
+    }
+    const parsed = parseFloat(draft);
+    if (Number.isNaN(parsed)) return; // gibberish/empty — leave the value as-is
+    const snapped = Math.round(parsed / step) * step;
+    const clamped = Math.min(max, Math.max(min, parseFloat(snapped.toFixed(decimals))));
+    if (clamped === value) return;
+    beginChange();
+    onChange(clamped);
+  };
+
   // A centre "0" tick only makes sense on bipolar sliders (those whose default
   // sits strictly inside the range, e.g. −100..100). For 0-based sliders like
   // Sharpen the default is the left edge, where a tick would be meaningless.
@@ -51,10 +78,32 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
   const tickPct = ((defaultValue - min) / (max - min)) * 100;
 
   return (
-    <label className={`block mb-3 text-xs text-neutral-400 select-none ${disabled ? 'opacity-40' : ''}`}>
-      <div className="flex justify-between mb-1">
+    <div className={`block mb-3 text-xs text-neutral-400 select-none ${disabled ? 'opacity-40' : ''}`}>
+      <div className="flex justify-between items-center mb-1">
         <span>{label}</span>
-        <span className="text-neutral-500 tabular-nums">{value}</span>
+        <input
+          type="text"
+          inputMode="decimal"
+          aria-label={`${label} value`}
+          disabled={disabled}
+          value={editing ? draft : format(value)}
+          onFocus={(e) => {
+            setEditing(true);
+            setDraft(format(value));
+            e.currentTarget.select();
+          }}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur(); // commits via onBlur
+            } else if (e.key === 'Escape') {
+              cancelRef.current = true; // onBlur then discards the draft
+              e.currentTarget.blur();
+            }
+          }}
+          className="w-12 text-right bg-transparent tabular-nums text-neutral-500 rounded px-1 select-text focus:bg-neutral-950 focus:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-neutral-600 disabled:cursor-not-allowed"
+        />
       </div>
       <div className="relative flex items-center h-5">
         {/* Track (drawn here so the tick can sit on it, beneath the thumb). */}
@@ -68,6 +117,7 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
         )}
         <input
           type="range"
+          aria-label={label}
           min={min}
           max={max}
           step={step}
@@ -79,6 +129,6 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
           className="relative w-full disabled:cursor-not-allowed"
         />
       </div>
-    </label>
+    </div>
   );
 }
