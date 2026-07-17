@@ -74,7 +74,7 @@ export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenVa
   };
 
   return (
-    <Section title="Geometry" color={JAPANESE_PALETTE.fujiiro} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
+    <Section title="Geometry" color={JAPANESE_PALETTE.fujiiro} defaultOpen={false} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <ControlGroup>
         <SliderRow
           label="Rotation"
