@@ -59,8 +59,8 @@ export function Basic({ image, forceOpenSignal, forceOpenValue }: Props) {
           title="How highlights roll off to white. AgX (Blender's filmic view transform) desaturates extreme highlights gracefully toward white instead of clipping to a harsh colour."
           className="w-full bg-neutral-950 border border-neutral-700 rounded text-xs text-neutral-300 py-1 px-2"
         >
+          <option value="agx">Modern (AgX)</option>
           <option value="classic">Classic</option>
-          <option value="agx">AgX</option>
         </select>
       </div>
 

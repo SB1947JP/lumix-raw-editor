@@ -59,7 +59,7 @@ export interface EditParams {
 }
 
 export const DEFAULT_EDIT_PARAMS: EditParams = {
-  tonemapMode: 'classic',
+  tonemapMode: 'agx',
   exposure: 0,
   brightness: 0,
   contrast: 0,
