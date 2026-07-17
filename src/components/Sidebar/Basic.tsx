@@ -60,7 +60,7 @@ export function Basic({ image, forceOpenSignal, forceOpenValue }: Props) {
           className="w-full bg-neutral-950 border border-neutral-700 rounded text-xs text-neutral-300 py-1 px-2"
         >
           <option value="classic">Classic</option>
-          <option value="agx">AgX (filmic)</option>
+          <option value="agx">AgX</option>
         </select>
       </div>
 
