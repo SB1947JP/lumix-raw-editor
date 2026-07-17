@@ -62,6 +62,12 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
       cancelRef.current = false;
       return;
     }
+    // Unchanged text (e.g. the user just clicked in and back out) must never
+    // alter the value — otherwise focusing a field showing a non-step-aligned
+    // value like an Auto-Levels result (1.88, shown while the true value sits
+    // between steps) would snap it to 1.90 on blur, a silent edit the user
+    // never asked for.
+    if (draft === format(value)) return;
     const parsed = parseFloat(draft);
     if (Number.isNaN(parsed)) return; // gibberish/empty — leave the value as-is
     const snapped = Math.round(parsed / step) * step;
@@ -83,7 +89,10 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
         <span>{label}</span>
         <input
           type="text"
-          inputMode="decimal"
+          // Bipolar sliders need a minus key; iOS's "decimal" keypad has none,
+          // so fall back to the full keyboard there. Non-negative sliders
+          // (Sharpen) keep the tidy numeric pad.
+          inputMode={min < 0 ? 'text' : 'decimal'}
           aria-label={`${label} value`}
           disabled={disabled}
           value={editing ? draft : format(value)}
