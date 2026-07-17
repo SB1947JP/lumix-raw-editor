@@ -10,6 +10,8 @@ interface Props {
   /** Bipolar dials fill their ring outward from the 12-o'clock centre; unipolar
    *  ones fill from the minimum. Drives only the lit-tick appearance. */
   bipolar: boolean;
+  /** Needle + lit-tick colour — set to the section's title colour by SliderRow. */
+  accent: string;
   onBeginChange: () => void;
   onChange: (value: number) => void;
   onReset: () => void;
@@ -21,7 +23,6 @@ const START_DEG = 225;
 const SWEEP_DEG = 270;
 const CENTER = 22;
 const TICKS = 13;
-const ACCENT = '#7cb3c0'; // brightened asagiiro — the "lit" indicator colour
 const DIM = '#3f3f46';
 
 /** Point on the knob face for a given clockwise-from-top angle (deg). */
@@ -30,7 +31,7 @@ function polar(angleDeg: number, radius: number): [number, number] {
   return [CENTER + radius * Math.sin(a), CENTER - radius * Math.cos(a)];
 }
 
-export function Knob({ value, min, max, step, defaultValue, disabled = false, bipolar, onBeginChange, onChange, onReset }: Props) {
+export function Knob({ value, min, max, step, defaultValue, disabled = false, bipolar, accent, onBeginChange, onChange, onReset }: Props) {
   const dragRef = useRef<{ startY: number; startValue: number } | null>(null);
   const lastDownRef = useRef(0);
   const decimals = (String(step).split('.')[1] || '').length;
@@ -117,7 +118,7 @@ export function Knob({ value, min, max, step, defaultValue, disabled = false, bi
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke={lit ? ACCENT : DIM}
+            stroke={lit ? accent : DIM}
             strokeWidth={1.5}
             strokeLinecap="round"
           />
@@ -127,8 +128,8 @@ export function Knob({ value, min, max, step, defaultValue, disabled = false, bi
       <circle cx={CENTER} cy={CENTER} r={13} fill="#1b1b20" stroke="#3f3f46" strokeWidth={1} />
       <circle cx={CENTER} cy={CENTER} r={13} fill="none" stroke="#000" strokeOpacity={0.4} strokeWidth={0.5} />
       {/* Pointer notch. */}
-      <line x1={CENTER} y1={CENTER} x2={ix} y2={iy} stroke={disabled ? DIM : ACCENT} strokeWidth={2} strokeLinecap="round" />
-      <circle cx={ix} cy={iy} r={1.6} fill={disabled ? DIM : ACCENT} />
+      <line x1={CENTER} y1={CENTER} x2={ix} y2={iy} stroke={disabled ? DIM : accent} strokeWidth={2} strokeLinecap="round" />
+      <circle cx={ix} cy={iy} r={1.6} fill={disabled ? DIM : accent} />
     </svg>
   );
 }

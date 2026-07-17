@@ -1,7 +1,8 @@
-import { PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
+import { PointerEvent as ReactPointerEvent, useContext, useRef, useState } from 'react';
 import { useEditParams } from '../state/editParams';
 import { useUiMode } from '../state/uiMode';
 import { Knob } from './Knob';
+import { SectionColorContext } from './Sidebar/Section';
 
 interface Props {
   label: string;
@@ -17,6 +18,7 @@ interface Props {
 export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, disabled = false, onChange }: Props) {
   const beginChange = useEditParams((s) => s.beginChange);
   const dial = useUiMode((s) => s.controlStyle === 'dial');
+  const accent = useContext(SectionColorContext);
   // Native dblclick is unreliable here: it's mouse-only (never fires for a
   // double-tap on touch/pen), and doesn't play well with setPointerCapture
   // below. Detecting the double-press ourselves (same pattern as
@@ -125,7 +127,7 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
   if (dial) {
     return (
       <div className={`flex flex-col items-center gap-0.5 py-1 text-xs text-neutral-400 select-none ${disabled ? 'opacity-40' : ''}`}>
-        <span className="text-[10px] uppercase tracking-wide text-neutral-500 truncate max-w-full">{label}</span>
+        <span className="truncate max-w-full">{label}</span>
         <Knob
           value={value}
           min={min}
@@ -134,6 +136,7 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
           defaultValue={defaultValue}
           disabled={disabled}
           bipolar={defaultValue > min && defaultValue < max}
+          accent={accent}
           onBeginChange={beginChange}
           onChange={onChange}
           onReset={handleReset}

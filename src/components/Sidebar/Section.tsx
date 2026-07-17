@@ -1,4 +1,8 @@
-import { ReactNode, useState } from 'react';
+import { createContext, ReactNode, useState } from 'react';
+
+/** The current section's accent colour (its title colour), so descendant
+ *  controls — e.g. the dial needles — can match it. */
+export const SectionColorContext = createContext<string>('#7cb3c0');
 
 interface Props {
   title: string;
@@ -52,7 +56,7 @@ export function Section({ title, color, children, defaultOpen = true, forceOpenS
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
-      {open && children}
+      {open && <SectionColorContext.Provider value={color}>{children}</SectionColorContext.Provider>}
     </div>
   );
 }
