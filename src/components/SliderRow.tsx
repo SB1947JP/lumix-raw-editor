@@ -127,7 +127,9 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
   if (dial) {
     return (
       <div className={`flex flex-col items-center gap-0.5 py-1 text-xs text-neutral-400 select-none ${disabled ? 'opacity-40' : ''}`}>
-        <span className="truncate max-w-full">{label}</span>
+        {/* whitespace-nowrap, not truncate: truncate's overflow:hidden clips
+            descenders (g/p/y) in the tight line box. The label set all fits. */}
+        <span className="whitespace-nowrap">{label}</span>
         <Knob
           value={value}
           min={min}
