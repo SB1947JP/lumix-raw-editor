@@ -215,22 +215,27 @@ vec3 applyHighlights(vec3 c, float highlights) {
   // highlight recovery does. It only amplifies colour that is actually present
   // — a near-neutral (or clipped-to-white) highlight has ~0 chroma, so no false
   // colour is invented — and any overshoot is caught by compressToGamut later.
+  // Keep this gentle: it *extrapolates* chroma (mix factor > 1), so a large
+  // coefficient over-saturates and pushes recovered highlights out of gamut,
+  // which reads as garish, hue-shifted colour once compressToGamut clips it
+  // back — worst past strong negative Highlights where softResponse ramps up.
   float recover = max(-amt, 0.0) * mask;
-  float satFactor = 1.0 + recover * 0.55;
+  float satFactor = 1.0 + recover * 0.2;
   result = mix(vec3(luma(result)), result, satFactor);
   return result;
 }
 
 vec3 applyToneRegions(vec3 c, float shadows, float whites, float blacks) {
   float l = luma(c);
-  // Partition-of-unity masks (the tone-equalizer approach): Blacks owns the
-  // deepest tones and hands over smoothly to Shadows, which peaks in the
-  // lower-mids and fades out before Whites picks up the top end. The old
-  // masks overlapped heavily (Blacks' 0-0.4 range sat entirely inside
-  // Shadows' 0-0.65), so pushing both sliders double-lifted the same pixels
-  // and made their combined effect unpredictable.
+  // Masks (the tone-equalizer approach): Blacks owns the deepest tones and
+  // hands over smoothly to Shadows, which peaks in the lower-mids. Shadows
+  // fades out by ~0.45 so pushing it lifts genuine shadows without dragging
+  // the pure midtones (0.5+) up with them — the old 0.65 falloff reached well
+  // into the midtones, so a strong Shadows push flattened and brightened them.
+  // The clear band between Shadows and Whites is deliberate: mid-grey is left
+  // to Exposure/Contrast/Curve, not the shadow/highlight recovery sliders.
   float blackMask = 1.0 - smoothstep(0.0, 0.3, l);
-  float shadowMask = smoothstep(0.0, 0.3, l) * (1.0 - smoothstep(0.3, 0.65, l));
+  float shadowMask = smoothstep(0.0, 0.28, l) * (1.0 - smoothstep(0.25, 0.5, l));
   float whiteMask = smoothstep(0.6, 1.0, l);
 
   float lTarget = l
