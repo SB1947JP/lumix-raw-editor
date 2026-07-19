@@ -3,6 +3,7 @@ import { Dropzone } from './components/Dropzone';
 import { ImageViewer } from './components/ImageViewer';
 import { Sidebar } from './components/Sidebar';
 import { ExportButton } from './components/ExportButton';
+import { FullscreenButton } from './components/FullscreenButton';
 import { Logo } from './components/Logo';
 import { decodePreview, friendlyDecodeError, isSupportedRawFile } from './lib/rawDecoder';
 import { computeImageRgbHistogram, HistogramData } from './lib/histogram';
@@ -149,25 +150,28 @@ export default function App() {
     <div className="flex flex-col h-screen w-screen bg-neutral-950">
       <header className="flex items-center justify-between gap-2 px-3 py-2 sm:px-4 border-b border-neutral-800 shrink-0">
         <Logo className="shrink-0" />
-        {status === 'ready' && fileBytes && (
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button
-              onClick={() => setStatus('empty')}
-              className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
-              style={{ borderColor: JAPANESE_PALETTE.asagiiro, color: JAPANESE_PALETTE.asagiiro }}
-            >
-              Open file
-            </button>
-            <button
-              onClick={handleDeleteFile}
-              className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
-              style={{ borderColor: JAPANESE_PALETTE.enjiiro, color: JAPANESE_PALETTE.enjiiro }}
-            >
-              Delete file
-            </button>
-            <ExportButton fileBytes={fileBytes} fileName={fileName} params={params} />
-          </div>
-        )}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {status === 'ready' && fileBytes && (
+            <>
+              <button
+                onClick={() => setStatus('empty')}
+                className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
+                style={{ borderColor: JAPANESE_PALETTE.asagiiro, color: JAPANESE_PALETTE.asagiiro }}
+              >
+                Open file
+              </button>
+              <button
+                onClick={handleDeleteFile}
+                className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
+                style={{ borderColor: JAPANESE_PALETTE.enjiiro, color: JAPANESE_PALETTE.enjiiro }}
+              >
+                Delete file
+              </button>
+              <ExportButton fileBytes={fileBytes} fileName={fileName} params={params} />
+            </>
+          )}
+          <FullscreenButton className="shrink-0" />
+        </div>
       </header>
 
       <div className={`flex flex-col flex-1 min-h-0 ${panelSide === 'left' ? 'sm:flex-row-reverse' : 'sm:flex-row'}`}>
