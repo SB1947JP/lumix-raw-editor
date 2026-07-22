@@ -238,8 +238,12 @@ vec3 applyToneRegions(vec3 c, float shadows, float whites, float blacks) {
   float shadowMask = smoothstep(0.0, 0.28, l) * (1.0 - smoothstep(0.25, 0.5, l));
   float whiteMask = smoothstep(0.6, 1.0, l);
 
+  // Shadows is deliberately the gentlest of the three: at 0.4 the top of its
+  // travel was unusable — a flat, milky lift nobody would ship — so the slider
+  // keeps its full -100..100 sweep but only spends half the strength across
+  // it, making the whole range useful instead of just the first half.
   float lTarget = l
-    + softResponse(shadows / 100.0) * shadowMask * 0.4
+    + softResponse(shadows / 100.0) * shadowMask * 0.2
     + softResponse(whites / 100.0) * whiteMask * 0.5
     + softResponse(blacks / 100.0) * blackMask * 0.5;
   return scaleToLuma(c, l, lTarget);
