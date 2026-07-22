@@ -200,7 +200,18 @@ vec3 applyHighlights(vec3 c, float highlights) {
   float l = luma(c);
   float pivot = 0.5;
   float amt = softResponse(clamp(highlights / 100.0, -1.0, 1.0));
-  float factor = 1.0 + amt * 0.6; // <1 compresses (recover), >1 expands (brighten)
+  // Asymmetric on purpose. Recovery (amt < 0) at the old shared 0.6 squeezed
+  // the bright range to 40% of its distance from the pivot, collapsing the
+  // *tonal separation* between bright tones — measured spread across the sky
+  // fell from 6.3 to 2.6 — so every highlight landed on the same flat mid-grey
+  // and the image read as silver. Saturation was never the problem (it rises,
+  // via the chroma lift below); the range simply had nowhere left to breathe.
+  // Halving the recovery side to 0.3 retains ~71% of the spread instead of
+  // ~41%, making the whole of the negative travel usable. The positive
+  // (brighten) side keeps 0.6, since expanding a range can't collapse it and
+  // that direction was never the complaint.
+  float strength = amt < 0.0 ? 0.3 : 0.6;
+  float factor = 1.0 + amt * strength; // <1 compresses (recover), >1 expands (brighten)
   float mask = smoothstep(0.3, 0.7, l);
 
   float lTarget = mix(l, pivot + (l - pivot) * factor, mask);
