@@ -38,6 +38,7 @@ A running history of the important steps taken to build Sean's RAW Editor.
 - Japanese-palette color-coded section titles, collapsible sidebar panels
 - Responsive/mobile layout pass; fixed iPad/iPhone pull-to-refresh and pinch-zoom fighting the app's own gestures
 - Export switched to Web Share API on iOS specifically (was failing silently), gated so desktop browsers keep normal downloads; fixed a "must be handling a user gesture" error
+- Fixed the "choose location" dialog silently disappearing on export. A full-res decode takes ~13s, far beyond the browser's ~5s transient user-activation window, so by the time the anchor download fired the tab no longer counted as user-initiated and Chromium reclassified it as an *automatic* download — skipping the save prompt. Measured: 13,508 ms gap with `navigator.userActivation.isActive === false`. Fixed by opening `showSaveFilePicker()` synchronously in the click handler (now 1 ms, activation still valid) and writing the decoded bytes to the chosen handle afterwards. Same root cause as the iOS share failure already documented in that file. Safari/Firefox keep the anchor path, which also stopped revoking the blob URL synchronously after `click()` — that race can cancel a download before the browser has read the blob
 - Renamed app to "Sean's RAW Editor"; trimmed base font size
 
 ## Film emulation

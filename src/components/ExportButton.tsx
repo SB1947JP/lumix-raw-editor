@@ -22,13 +22,62 @@ function isIOS(): boolean {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
+// File System Access API — Chromium only, and not in TypeScript's DOM lib.
+interface SaveFilePickerOptions {
+  suggestedName?: string;
+  types?: { description: string; accept: Record<string, string[]> }[];
+}
+interface WritableTarget {
+  createWritable: () => Promise<{ write: (data: Blob) => Promise<void>; close: () => Promise<void> }>;
+}
+type SaveFilePicker = (options: SaveFilePickerOptions) => Promise<WritableTarget>;
+
+function getSaveFilePicker(): SaveFilePicker | null {
+  const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker;
+  return typeof picker === 'function' ? picker : null;
+}
+
 export function ExportButton({ fileBytes, fileName, params }: Props) {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleExport = async () => {
-    setExporting(true);
     setError(null);
+    const outName = `${fileName.replace(/\.[^.]+$/, '')}_edited.jpg`;
+
+    // Ask where to save *before* decoding, not after.
+    //
+    // A full-res decode of a large RAW takes ~13s, which is far longer than
+    // the browser's transient user-activation window (~5s in Chromium). Once
+    // that window closes the tab no longer counts as "user-initiated", so the
+    // anchor download below stops being treated as a real download: Chromium
+    // reclassifies it as an automatic one and skips the "choose location"
+    // prompt entirely. It degraded gradually rather than breaking, because
+    // whether it worked depended purely on how long the decode happened to
+    // take. (Same root cause as the iOS share failure documented below.)
+    //
+    // Opening the save picker synchronously in the click handler spends the
+    // activation while it is still valid, so the destination is chosen up
+    // front and the decoded bytes are written straight to that handle.
+    let saveTarget: WritableTarget | null = null;
+    const picker = getSaveFilePicker();
+    if (picker && !isIOS()) {
+      try {
+        saveTarget = await picker({
+          suggestedName: outName,
+          types: [{ description: 'JPEG image', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } }],
+        });
+      } catch (pickErr) {
+        // Cancelling the picker means "don't export", not "export somewhere
+        // else" — bail out silently rather than dumping a file in Downloads.
+        if (pickErr instanceof Error && pickErr.name === 'AbortError') return;
+        // Anything else (policy-blocked, unsupported context) just falls
+        // through to the anchor path below.
+        saveTarget = null;
+      }
+    }
+
+    setExporting(true);
     try {
       const { image } = await decodeFull(fileBytes);
       const canvas = document.createElement('canvas');
@@ -39,7 +88,14 @@ export function ExportButton({ fileBytes, fileName, params }: Props) {
       renderer.dispose();
       if (!blob) throw new Error('Export failed');
 
-      const outName = `${fileName.replace(/\.[^.]+$/, '')}_edited.jpg`;
+      // Destination already chosen above — write straight to it.
+      if (saveTarget) {
+        const writable = await saveTarget.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return;
+      }
+
       const file = new File([blob], outName, { type: 'image/jpeg' });
 
       // iOS/iPadOS Safari doesn't reliably trigger a file-save dialog for
@@ -62,12 +118,18 @@ export function ExportButton({ fileBytes, fileName, params }: Props) {
         }
       }
 
+      // Fallback for browsers without the save picker (Safari, Firefox).
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = outName;
+      // In the document and revoked later, not immediately: revoking straight
+      // after click() can pull the blob out from under a download the browser
+      // hasn't started reading yet, which silently produces no file at all.
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed');
     } finally {
