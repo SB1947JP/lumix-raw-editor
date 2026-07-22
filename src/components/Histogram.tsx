@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { JAPANESE_PALETTE } from '../lib/palette';
+import { UI_COLORS } from '../lib/palette';
 import { HistogramData } from '../lib/histogram';
 
 interface Props {
@@ -9,9 +9,11 @@ interface Props {
 
 type Mode = 'before' | 'after';
 
+// Only the live "after" view is accented; "before" is a reference state, so
+// it reads as neutral rather than as a second competing colour.
 const TAB_COLORS: Record<Mode, string> = {
-  before: JAPANESE_PALETTE.shuiro,
-  after: JAPANESE_PALETTE.asagiiro,
+  before: UI_COLORS.heading,
+  after: UI_COLORS.accent,
 };
 
 const CHANNELS = [

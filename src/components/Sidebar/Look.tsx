@@ -1,7 +1,6 @@
 import { useEditParams } from '../../state/editParams';
 import { Section } from './Section';
 import { CurveEditor } from '../CurveEditor';
-import { JAPANESE_PALETTE } from '../../lib/palette';
 import { FILM_STOCKS, matchFilmStock } from '../../lib/filmStocks';
 import { CURVE_PRESETS, matchCurvePreset, isIdentityCurve, normalizeCurve } from '../../lib/curve';
 import { DEFAULT_EDIT_PARAMS } from '../../types';
@@ -23,7 +22,7 @@ export function Look({ forceOpenSignal, forceOpenValue }: Props) {
   const matchedCurve = matchCurvePreset(curvePoints);
 
   return (
-    <Section title="Look" color={JAPANESE_PALETTE.edocha} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
+    <Section title="Look" forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       {/* One control instead of two dropdowns fighting over the tone curve: the
           Film group applies a full stock (colour + its curve), the Camera look
           / contrast group applies a curve only. */}

@@ -1,12 +1,8 @@
-import { createContext, ReactNode, useState } from 'react';
-
-/** The current section's accent colour (its title colour), so descendant
- *  controls — e.g. the dial needles — can match it. */
-export const SectionColorContext = createContext<string>('#7cb3c0');
+import { ReactNode, useState } from 'react';
+import { UI_COLORS } from '../../lib/palette';
 
 interface Props {
   title: string;
-  color: string;
   children: ReactNode;
   /** Whether the section starts expanded (default true). */
   defaultOpen?: boolean;
@@ -17,7 +13,7 @@ interface Props {
   forceOpenValue?: boolean;
 }
 
-export function Section({ title, color, children, defaultOpen = true, forceOpenSignal, forceOpenValue }: Props) {
+export function Section({ title, children, defaultOpen = true, forceOpenSignal, forceOpenValue }: Props) {
   const [open, setOpen] = useState(defaultOpen);
   // Sync `open` to an external "force all sections open/closed" signal without
   // remounting the section (a key-based remount would also wipe out any other
@@ -39,7 +35,7 @@ export function Section({ title, color, children, defaultOpen = true, forceOpenS
         aria-expanded={open}
         className="flex w-full items-center justify-between mb-2 select-none group"
       >
-        <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
+        <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: UI_COLORS.heading }}>
           {title}
         </h3>
         <svg
@@ -47,7 +43,7 @@ export function Section({ title, color, children, defaultOpen = true, forceOpenS
           width="12"
           height="12"
           fill="none"
-          stroke={color}
+          stroke={UI_COLORS.heading}
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -56,7 +52,7 @@ export function Section({ title, color, children, defaultOpen = true, forceOpenS
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
-      {open && <SectionColorContext.Provider value={color}>{children}</SectionColorContext.Provider>}
+      {open && children}
     </div>
   );
 }

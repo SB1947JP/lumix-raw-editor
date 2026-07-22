@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { decodeFull } from '../lib/rawDecoder';
 import { RawRenderer } from '../gl/renderer';
-import { JAPANESE_PALETTE } from '../lib/palette';
+import { UI_COLORS } from '../lib/palette';
 import { EditParams } from '../types';
 
 interface Props {
@@ -82,7 +82,7 @@ export function ExportButton({ fileBytes, fileName, params }: Props) {
         onClick={handleExport}
         disabled={exporting}
         className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium disabled:opacity-50 hover:bg-neutral-900 whitespace-nowrap"
-        style={{ borderColor: JAPANESE_PALETTE.shuiro, color: JAPANESE_PALETTE.shuiro }}
+        style={{ borderColor: UI_COLORS.accent, color: UI_COLORS.accent }}
       >
         {exporting ? 'Exporting…' : 'Export JPEG'}
       </button>

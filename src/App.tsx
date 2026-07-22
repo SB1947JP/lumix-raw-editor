@@ -8,10 +8,11 @@ import { Logo } from './components/Logo';
 import { decodePreview, friendlyDecodeError, isSupportedRawFile } from './lib/rawDecoder';
 import { computeImageRgbHistogram, HistogramData } from './lib/histogram';
 import { loadSession, saveSession, clearSession } from './lib/sessionStore';
-import { JAPANESE_PALETTE } from './lib/palette';
+import { UI_COLORS } from './lib/palette';
 import { useEditParams } from './state/editParams';
 import { useCropTool } from './state/cropTool';
 import { useUiMode } from './state/uiMode';
+import { libraryIdFor, useLibrary } from './state/library';
 import { DecodedImage, RawMetadata } from './types';
 
 // 'booting' is the brief window while the last session is being read from
@@ -33,6 +34,13 @@ export default function App() {
   const undo = useEditParams((s) => s.undo);
   const resetCropToolForNewImage = useCropTool((s) => s.resetForNewImage);
   const panelSide = useUiMode((s) => s.panelSide);
+  const addToLibrary = useLibrary((s) => s.addFiles);
+  const selectInLibrary = useLibrary((s) => s.select);
+  const librarySelectedId = useLibrary((s) => s.selectedId);
+  const libraryItems = useLibrary((s) => s.items);
+  // Which library file the editor currently holds, so re-renders and unrelated
+  // library changes (probes finishing, tags being added) can't retrigger a decode.
+  const loadedLibraryIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -116,14 +124,37 @@ export default function App() {
         setStatus('error');
         return;
       }
+      // Everything opened this way also joins the browser list, so a file
+      // dropped straight onto the viewer can still be tagged and mapped.
+      addToLibrary([file]);
+      const id = libraryIdFor(file);
+      selectInLibrary(id);
+      // Claim the decode here rather than letting the selection effect below
+      // do it a second time.
+      loadedLibraryIdRef.current = id;
+
       setStatus('loading');
       setLoadingFileName(file.name);
       const buf = await file.arrayBuffer();
       const bytes = new Uint8Array(buf);
       await runDecode(file.name, bytes, true);
     },
-    [runDecode],
+    [runDecode, addToLibrary, selectInLibrary],
   );
+
+  // Picking a different photo in the browser loads it into the editor. Treated
+  // as a new file (params reset), since carrying one photo's exposure and crop
+  // onto the next one is never what's wanted.
+  useEffect(() => {
+    if (!librarySelectedId || librarySelectedId === loadedLibraryIdRef.current) return;
+    const item = libraryItems.find((i) => i.id === librarySelectedId);
+    if (!item) return;
+    loadedLibraryIdRef.current = librarySelectedId;
+    void (async () => {
+      const bytes = new Uint8Array(await item.file.arrayBuffer());
+      await runDecode(item.name, bytes, true);
+    })();
+  }, [librarySelectedId, libraryItems, runDecode]);
 
   const handleCancelLoad = useCallback(() => {
     abortRef.current?.abort();
@@ -134,6 +165,9 @@ export default function App() {
   // to the dropzone without discarding anything, in case the user cancels).
   const handleDeleteFile = useCallback(async () => {
     await clearSession();
+    // Release the claim so re-picking the same browser entry reloads it
+    // instead of being mistaken for the file that's already open.
+    loadedLibraryIdRef.current = null;
     setFileBytes(null);
     setFileName('');
     setPreview(null);
@@ -154,16 +188,9 @@ export default function App() {
           {status === 'ready' && fileBytes && (
             <>
               <button
-                onClick={() => setStatus('empty')}
-                className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
-                style={{ borderColor: JAPANESE_PALETTE.asagiiro, color: JAPANESE_PALETTE.asagiiro }}
-              >
-                Open file
-              </button>
-              <button
                 onClick={handleDeleteFile}
                 className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
-                style={{ borderColor: JAPANESE_PALETTE.enjiiro, color: JAPANESE_PALETTE.enjiiro }}
+                style={{ borderColor: UI_COLORS.danger, color: UI_COLORS.danger }}
               >
                 Delete file
               </button>

@@ -6,6 +6,15 @@ export interface DecodedImage {
   bitsPerSample: 8 | 16;
 }
 
+/** A geotag decoded from the file's EXIF, in the signed decimal degrees that
+ *  every mapping service speaks (north/east positive, south/west negative). */
+export interface GpsCoords {
+  latitude: number;
+  longitude: number;
+  /** Metres relative to sea level; negative when the EXIF altitude ref says "below". */
+  altitude?: number;
+}
+
 export interface RawMetadata {
   make?: string;
   model?: string;
@@ -15,6 +24,8 @@ export interface RawMetadata {
   focalLength?: number;
   timestamp?: number;
   colors?: number;
+  /** Present only when the camera actually recorded a valid geotag. */
+  gps?: GpsCoords;
 }
 
 export interface DecodedRaw {

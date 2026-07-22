@@ -1,8 +1,8 @@
-import { PointerEvent as ReactPointerEvent, useContext, useRef, useState } from 'react';
+import { PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
 import { useEditParams } from '../state/editParams';
 import { useUiMode } from '../state/uiMode';
+import { UI_COLORS } from '../lib/palette';
 import { Knob } from './Knob';
-import { SectionColorContext } from './Sidebar/Section';
 
 interface Props {
   label: string;
@@ -18,7 +18,6 @@ interface Props {
 export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, disabled = false, onChange }: Props) {
   const beginChange = useEditParams((s) => s.beginChange);
   const dial = useUiMode((s) => s.controlStyle === 'dial');
-  const accent = useContext(SectionColorContext);
   // Native dblclick is unreliable here: it's mouse-only (never fires for a
   // double-tap on touch/pen), and doesn't play well with setPointerCapture
   // below. Detecting the double-press ourselves (same pattern as
@@ -138,7 +137,7 @@ export function SliderRow({ label, value, min, max, step = 1, defaultValue = 0, 
           defaultValue={defaultValue}
           disabled={disabled}
           bipolar={defaultValue > min && defaultValue < max}
-          accent={accent}
+          accent={UI_COLORS.accent}
           onBeginChange={beginChange}
           onChange={onChange}
           onReset={handleReset}

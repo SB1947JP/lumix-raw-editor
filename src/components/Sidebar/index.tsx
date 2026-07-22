@@ -3,8 +3,10 @@ import { useEditParams } from '../../state/editParams';
 import { useUiMode } from '../../state/uiMode';
 import { DecodedImage, RawMetadata } from '../../types';
 import { HistogramData } from '../../lib/histogram';
-import { JAPANESE_PALETTE } from '../../lib/palette';
+import { UI_COLORS } from '../../lib/palette';
 import { Histogram } from '../Histogram';
+import { FileBrowser } from '../FileBrowser';
+import { useLibrary } from '../../state/library';
 import { Basic } from './Basic';
 import { Tone } from './Tone';
 import { Look } from './Look';
@@ -41,6 +43,9 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
   const toggleControlStyle = useUiMode((s) => s.toggleControlStyle);
   const panelSide = useUiMode((s) => s.panelSide);
   const togglePanelSide = useUiMode((s) => s.togglePanelSide);
+  const sidebarTab = useUiMode((s) => s.sidebarTab);
+  const setSidebarTab = useUiMode((s) => s.setSidebarTab);
+  const fileCount = useLibrary((s) => s.items.length);
 
   // All sections start expanded, so the toggle's own label assumes that's the
   // current state; clicking forces every section to the opposite of `allOpen`
@@ -59,6 +64,36 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         panelSide === 'left' ? 'sm:border-r' : 'sm:border-l'
       } border-neutral-800 p-3 sm:p-4`}
     >
+      {/* Edit and Files share this one panel, so the window carries a single
+          column of chrome beside the photo instead of one on either side. */}
+      <div role="tablist" aria-label="Panel" className="flex gap-1 mb-3 p-0.5 rounded-md bg-neutral-950">
+        {([
+          { id: 'files', label: fileCount > 0 ? `Files (${fileCount})` : 'Files' },
+          { id: 'edit', label: 'Edit' },
+        ] as const).map((tab) => {
+          const active = sidebarTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setSidebarTab(tab.id)}
+              className={`flex-1 text-xs font-medium py-1.5 rounded transition-colors ${
+                active ? 'bg-neutral-800' : 'text-neutral-500 hover:text-neutral-300'
+              }`}
+              style={active ? { color: UI_COLORS.accent } : undefined}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {sidebarTab === 'files' ? (
+        <FileBrowser />
+      ) : (
+        <>
       <div className="mb-4">
         <Histogram before={originalHistogram} after={histogram} />
       </div>
@@ -83,13 +118,13 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         onClick={toggleControlStyle}
         className="w-full flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-md border transition-colors select-none"
         style={{
-          borderColor: dial ? JAPANESE_PALETTE.asagiiro : '#52525b',
+          borderColor: dial ? UI_COLORS.accent : UI_COLORS.muted,
           backgroundColor: dial ? 'rgba(96,139,149,0.15)' : 'transparent',
         }}
       >
         <span
           className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide"
-          style={{ color: dial ? JAPANESE_PALETTE.asagiiro : '#d4d4d8' }}
+          style={{ color: dial ? UI_COLORS.accent : '#d4d4d8' }}
         >
           <svg viewBox="0 0 16 16" className="w-4 h-4" aria-hidden="true">
             <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -99,7 +134,7 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         </span>
         <span
           className="relative w-10 h-5 rounded-full transition-colors shrink-0"
-          style={{ backgroundColor: dial ? JAPANESE_PALETTE.asagiiro : '#52525b' }}
+          style={{ backgroundColor: dial ? UI_COLORS.accent : UI_COLORS.muted }}
         >
           <span
             className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-neutral-100 transition-transform ${dial ? 'translate-x-5' : ''}`}
@@ -173,6 +208,8 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
           Reset all
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }

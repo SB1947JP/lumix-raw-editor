@@ -2,7 +2,6 @@ import { useEditParams } from '../../state/editParams';
 import { SliderRow } from '../SliderRow';
 import { Section } from './Section';
 import { ControlGroup } from './ControlGroup';
-import { JAPANESE_PALETTE } from '../../lib/palette';
 
 interface Props {
   forceOpenSignal?: number;
@@ -13,7 +12,7 @@ export function Color({ forceOpenSignal, forceOpenValue }: Props) {
   const { params, set } = useEditParams();
 
   return (
-    <Section title="Colour" color={JAPANESE_PALETTE.asagiiro} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
+    <Section title="Colour" forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <ControlGroup>
         <SliderRow label="Temperature" value={params.temperature} min={-100} max={100} onChange={(v) => set('temperature', v)} />
         <SliderRow label="Tint" value={params.tint} min={-100} max={100} onChange={(v) => set('tint', v)} />

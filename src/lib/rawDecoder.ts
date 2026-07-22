@@ -1,6 +1,6 @@
 import LibRaw from 'libraw-wasm';
-import type { LibRawImageData, Metadata } from 'libraw-wasm';
-import { DecodedImage, RawMetadata } from '../types';
+import type { GpsData, LibRawImageData, Metadata } from 'libraw-wasm';
+import { DecodedImage, GpsCoords, RawMetadata } from '../types';
 
 const BASE_SETTINGS = {
   useCameraWb: true, // as-shot white balance, not an auto-computed guess
@@ -20,6 +20,53 @@ function toDecodedImage(img: LibRawImageData): DecodedImage {
   };
 }
 
+/** [degrees, minutes, seconds] → decimal degrees. */
+function dmsToDecimal(dms: [number, number, number] | undefined): number | null {
+  if (!dms || dms.length !== 3) return null;
+  const [deg, min, sec] = dms;
+  if (![deg, min, sec].every((n) => typeof n === 'number' && Number.isFinite(n))) return null;
+  return deg + min / 60 + sec / 3600;
+}
+
+/**
+ * Converts LibRaw's EXIF GPS block into signed decimal degrees, or null when
+ * the file has no usable geotag.
+ *
+ * Most RAW files have no GPS at all, and the ones that do can still carry a
+ * half-written block, so this is deliberately strict:
+ *  - `gpsparsed` is the only reliable way to tell "no GPS in this file" from a
+ *    legitimate reading at 0°,0° (LibRaw zero-fills the struct either way).
+ *  - `gpsstatus` 'V' means the receiver had no fix when the shutter fired —
+ *    the numbers are there but meaningless, so they're rejected.
+ *  - A missing hemisphere ref means the block was never populated properly;
+ *    guessing north/east there would silently place photos in the wrong
+ *    hemisphere, so it's rejected instead.
+ */
+function toGpsCoords(gps: GpsData | undefined): GpsCoords | undefined {
+  if (!gps || !gps.gpsparsed) return undefined;
+  if (gps.gpsstatus === 'V') return undefined;
+
+  const lat = dmsToDecimal(gps.latitude);
+  const lon = dmsToDecimal(gps.longitude);
+  if (lat === null || lon === null) return undefined;
+
+  const latRef = gps.latref?.toUpperCase();
+  const lonRef = gps.longref?.toUpperCase();
+  if ((latRef !== 'N' && latRef !== 'S') || (lonRef !== 'E' && lonRef !== 'W')) return undefined;
+
+  const latitude = latRef === 'S' ? -lat : lat;
+  const longitude = lonRef === 'W' ? -lon : lon;
+  // Out-of-range values mean a misparsed block, not a real place.
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return undefined;
+
+  const alt = typeof gps.altitude === 'number' && Number.isFinite(gps.altitude) ? gps.altitude : undefined;
+  return {
+    latitude,
+    longitude,
+    altitude: alt === undefined ? undefined : gps.altref === 1 ? -alt : alt,
+  };
+}
+
 function toRawMetadata(meta: Metadata | undefined): RawMetadata {
   if (!meta) return {};
   return {
@@ -31,6 +78,7 @@ function toRawMetadata(meta: Metadata | undefined): RawMetadata {
     focalLength: meta.focal_len,
     timestamp: meta.timestamp ? meta.timestamp.getTime() : undefined,
     colors: meta.colors,
+    gps: toGpsCoords(meta.gps_data),
   };
 }
 
@@ -266,4 +314,58 @@ export function decodePreview(bytes: Uint8Array<ArrayBuffer>, signal?: AbortSign
 /** Full-resolution decode, used only when exporting. */
 export function decodeFull(bytes: Uint8Array<ArrayBuffer>, signal?: AbortSignal) {
   return decode(bytes, false, signal);
+}
+
+export interface FileProbe {
+  metadata: RawMetadata;
+  /** Object URL for the camera's embedded preview, or null if it has none.
+   *  The caller owns it and must revokeObjectURL when done. */
+  thumbnailUrl: string | null;
+}
+
+/**
+ * Reads just the metadata and the camera's own embedded preview image — no
+ * demosaic, no highlight reconstruction. This is what the file browser lists
+ * with: a full decode of every file in a folder would take minutes and
+ * gigabytes, whereas every RAW file already carries a small JPEG preview that
+ * LibRaw can hand back almost instantly.
+ */
+export async function probeFile(bytes: Uint8Array<ArrayBuffer>, signal?: AbortSignal): Promise<FileProbe> {
+  if (signal?.aborted) throw abortError();
+  const raw = new LibRaw();
+  let disposed = false;
+  const disposeOnce = () => {
+    if (!disposed) {
+      disposed = true;
+      raw.dispose();
+    }
+  };
+  const onAbort = () => disposeOnce();
+  signal?.addEventListener('abort', onAbort);
+  try {
+    await raw.open(bytes.slice(), BASE_SETTINGS);
+    const meta = await raw.metadata();
+    let thumbnailUrl: string | null = null;
+    try {
+      const thumb = await raw.thumbnailData();
+      // Only the JPEG case is worth handling: it's what virtually every camera
+      // embeds, and it can go straight into a Blob without any pixel work. The
+      // rare bitmap/unknown formats just fall back to a placeholder tile.
+      if (thumb && thumb.format === 'jpeg' && thumb.data?.length) {
+        // Copied into a plain ArrayBuffer-backed view: the worker's buffer is
+        // typed as possibly-shared, which Blob won't accept.
+        thumbnailUrl = URL.createObjectURL(new Blob([new Uint8Array(thumb.data)], { type: 'image/jpeg' }));
+      }
+    } catch {
+      // A missing or unreadable thumbnail must never fail the whole probe —
+      // the file is still listable and editable without a preview tile.
+    }
+    return { metadata: toRawMetadata(meta), thumbnailUrl };
+  } catch (err) {
+    if (signal?.aborted) throw abortError();
+    throw err;
+  } finally {
+    signal?.removeEventListener('abort', onAbort);
+    disposeOnce();
+  }
 }

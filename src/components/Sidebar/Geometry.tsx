@@ -4,7 +4,6 @@ import { Section } from './Section';
 import { RATIO_PRESETS, RatioPreset, resolveLockedAspect, useCropTool } from '../../state/cropTool';
 import { computeAutoCropForRotation, fitAspectInRect, intersectCropRects, isFullFrame } from '../../lib/autoCrop';
 import { ControlGroup } from './ControlGroup';
-import { JAPANESE_PALETTE } from '../../lib/palette';
 import { CropRect } from '../../types';
 
 const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
@@ -74,7 +73,7 @@ export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenVa
   };
 
   return (
-    <Section title="Geometry" color={JAPANESE_PALETTE.fujiiro} defaultOpen={false} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
+    <Section title="Geometry" defaultOpen={false} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <ControlGroup>
         <SliderRow
           label="Rotation"

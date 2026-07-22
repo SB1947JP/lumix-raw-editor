@@ -3,7 +3,6 @@ import { SliderRow } from '../SliderRow';
 import { Section } from './Section';
 import { ControlGroup } from './ControlGroup';
 import { computeAutoLevels } from '../../lib/autoLevels';
-import { JAPANESE_PALETTE } from '../../lib/palette';
 import { DecodedImage } from '../../types';
 
 interface Props {
@@ -29,7 +28,7 @@ export function Basic({ image, forceOpenSignal, forceOpenValue }: Props) {
   };
 
   return (
-    <Section title="Basic" color={JAPANESE_PALETTE.shuiro} forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
+    <Section title="Basic" forceOpenSignal={forceOpenSignal} forceOpenValue={forceOpenValue}>
       <button
         onClick={handleAutoLevels}
         disabled={!image}

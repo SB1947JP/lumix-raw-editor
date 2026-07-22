@@ -44,6 +44,27 @@ A running history of the important steps taken to build Sean's RAW Editor.
 - Each preset carries real Kelvin balance point (mired-shifted from D65), brand tint, saturation/vibrance character, and tone-curve contrast
 - Added then fully removed a film-grain simulation stage (shader noise + slider) per request
 
+## File browser, keywords and GPS map
+
+- Added a **file browser**: pick a whole folder (`webkitdirectory`), pick individual files, or drag a batch in. Chosen over the File System Access API because that one is Chrome/Edge only, and cross-browser support matters here; the trade-off is that the list is session-only, since `File` objects can't survive a reload
+- Thumbnails come from each RAW's **embedded JPEG preview** (LibRaw `thumbnailData()`), not a decode — listing a folder would otherwise take minutes and gigabytes. Probes run strictly one file at a time so a large folder can't hold N wasm heaps at once
+- Added **keyword tagging** with filter chips (AND across keywords) and a name search. Stored in IndexedDB keyed by file name so tags outlive the reload that the file list doesn't. The RAW files are never modified
+- Moved the session slot and keywords behind one shared IndexedDB handle — a single database name can only be open at one version at a time, so separate `indexedDB.open()` calls would deadlock on upgrade. Bumped v1→v2 in place, preserving existing stored sessions
+- Added a **GPS map** for geotagged shots. LibRaw does expose `gps_data`, converted here from DMS to signed decimal degrees, strictly: `gpsparsed` separates "no GPS" from a genuine 0°,0°, and a no-fix `'V'` status, missing hemisphere ref or out-of-range value is rejected rather than guessed
+- The map is a hand-written slippy map over OpenStreetMap tiles (Web Mercator maths, drag-to-pan, zoom, recentre) rather than Leaflet, avoiding a dependency plus stylesheet and marker assets needing base-path handling for the Pages subdirectory. Carries the required OSM attribution and sends no referrer
+- Started as a separate left-hand panel, then folded into the editing panel as an **Edit / Files tab pair** — two panels flanking the photo was more chrome than the interface could carry, and tabbing them reclaimed the width for the image (fit went 18% → 26% on the same window). Replaced `browserOpen` with `sidebarTab`, and dropped the browser's own collapse rail and panel frame in the process
+- Removed the header's "Open file" button, now redundant: the browser's Add folder / Add files (and drag-drop) are the way in, and "Delete file" still returns to the dropzone
+- Verified against real geotagged RW2 files: thumbnails extracted, coordinates resolved to the correct location, per-photo GPS and altitude differed correctly, tags survived a reload, filtering and dedupe both confirmed
+
+## Interface colour simplification
+
+- The panel had accumulated **eight competing accent colours** — five colour-coded section titles plus separate hues for the file browser, keyword tags, export and the histogram's "before" tab — and the chrome had started competing with the photograph being edited
+- Collapsed to a two-colour system expressed by *role* rather than hue, in `UI_COLORS`: one `accent` for anything active/selected/live, and `danger` reserved for destructive actions. Section titles are now neutral
+- Consequence, accepted deliberately: dial needles no longer match their section's colour (an earlier request), since the sections no longer have distinct colours. All needles use the single accent
+- Removed the now-pointless `SectionColorContext` and the per-section `color` prop threaded through all five sections
+- Histogram keeps its R/G/B channel colours — that's data, not decoration
+- Verified by scanning every painted `color`/`border`/`background` in the live DOM for non-neutral values: exactly three remain (accent, danger, and the SRE logo's cream), down from eight
+
 ## Verification discipline throughout
 
 Every change checked with `tsc` + production build, then functionally verified in-browser via pixel-level `gl.readPixels()` comparisons (saturation ratios, clipping counts, luma) rather than just visual inspection — and only pushed to `main`/deployed when explicitly requested.
