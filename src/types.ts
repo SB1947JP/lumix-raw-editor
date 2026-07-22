@@ -47,6 +47,16 @@ export interface CurvePoint {
   y: number;
 }
 
+/** A sensor-dust spot to heal over, in normalized source-image coordinates so
+ *  it survives the half-res preview → full-res export jump unchanged. `r` is
+ *  measured along x (i.e. as a fraction of image *width*) for both axes: the
+ *  spot is round in pixels, not in the non-square uv space. */
+export interface DustSpot {
+  x: number;
+  y: number;
+  r: number;
+}
+
 export type TonemapMode = 'classic' | 'agx';
 
 export interface EditParams {
@@ -67,6 +77,9 @@ export interface EditParams {
   lumaCurve: CurvePoint[];
   rotation: number; // degrees, 0/90/180/270 plus fine rotation -45..45
   crop: CropRect | null;
+  /** Spots healed over by the Dust Removal button. Empty by default — nothing
+   *  is ever retouched unless the user asks for it. */
+  dustSpots: DustSpot[];
 }
 
 export const DEFAULT_EDIT_PARAMS: EditParams = {
@@ -89,4 +102,5 @@ export const DEFAULT_EDIT_PARAMS: EditParams = {
   ],
   rotation: 0,
   crop: null,
+  dustSpots: [],
 };

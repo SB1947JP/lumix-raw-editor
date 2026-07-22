@@ -7,6 +7,7 @@ import { UI_COLORS } from '../../lib/palette';
 import { Histogram } from '../Histogram';
 import { FileBrowser } from '../FileBrowser';
 import { useLibrary } from '../../state/library';
+import { Auto } from './Auto';
 import { Basic } from './Basic';
 import { Tone } from './Tone';
 import { Look } from './Look';
@@ -208,7 +209,8 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         </button>
       </div>
 
-      <Basic image={image} forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Auto image={image} forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
+      <Basic forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
       <Tone forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
       <Look forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />
       <Color forceOpenSignal={toggleSignal} forceOpenValue={allOpen} />

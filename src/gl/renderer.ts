@@ -5,6 +5,7 @@ import { getEffectiveDimensions } from '../lib/geometry';
 import { computeWbMatrix } from '../lib/whiteBalance';
 import { buildCurveLut, isIdentityCurve } from '../lib/curve';
 import { AGX_PIPE_TO_RENDERING_MATRIX, AGX_RENDERING_TO_PIPE_MATRIX } from '../lib/agx';
+import { MAX_DUST_SPOTS } from '../lib/dustSpots';
 import { CurvePoint } from '../types';
 
 function compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
@@ -59,6 +60,7 @@ const UNIFORM_NAMES = [
   'uCurveLut', 'uCurveActive',
   'uTonemapMode', 'uAgxPipeToRendering', 'uAgxRenderingToPipe',
   'uCropScale', 'uCropOffset', 'uRotation',
+  'uDustCount', 'uDustSpots', 'uDustAspect',
 ] as const;
 
 export class RawRenderer {
@@ -72,6 +74,8 @@ export class RawRenderer {
   private uniforms: Partial<Record<(typeof UNIFORM_NAMES)[number], WebGLUniformLocation | null>> = {};
   private imageWidth = 0;
   private imageHeight = 0;
+  /** Scratch for the dust uniform array, reused so a render doesn't allocate. */
+  private dustBuffer = new Float32Array(MAX_DUST_SPOTS * 3);
 
   constructor(private canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2');
@@ -223,6 +227,21 @@ export class RawRenderer {
     gl.uniformMatrix3fv(this.uniforms.uAgxRenderingToPipe!, false, AGX_RENDERING_TO_PIPE_MATRIX);
 
     gl.uniform1f(this.uniforms.uRotation!, (params.rotation * Math.PI) / 180);
+
+    // Dust spots are normalized to the source image, so the same list drives
+    // the half-res preview and the full-res export with no rescaling.
+    const spots = params.dustSpots ?? [];
+    const count = Math.min(spots.length, MAX_DUST_SPOTS);
+    gl.uniform1i(this.uniforms.uDustCount!, count);
+    if (count > 0) {
+      for (let i = 0; i < count; i++) {
+        this.dustBuffer[i * 3] = spots[i].x;
+        this.dustBuffer[i * 3 + 1] = spots[i].y;
+        this.dustBuffer[i * 3 + 2] = spots[i].r;
+      }
+      gl.uniform3fv(this.uniforms.uDustSpots!, this.dustBuffer.subarray(0, count * 3));
+      gl.uniform1f(this.uniforms.uDustAspect!, this.imageHeight / this.imageWidth);
+    }
 
     if (crop) {
       gl.uniform2f(this.uniforms.uCropScale!, crop.width, crop.height);

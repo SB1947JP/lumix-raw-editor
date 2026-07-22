@@ -27,8 +27,73 @@ uniform float uSaturation;  // -100..100
 uniform float uVibrance;    // -100..100
 uniform float uSharpen;     // 0..100
 
+// Dust removal. Must match MAX_DUST_SPOTS in lib/dustSpots.ts.
+const int MAX_DUST = 32;
+uniform int uDustCount;
+uniform vec3 uDustSpots[MAX_DUST]; // xy = centre in texture uv, z = radius as a fraction of image width
+uniform float uDustAspect;         // imageHeight / imageWidth
+
 float luma(vec3 c) {
   return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
+
+// Heals detected dust spots by rebuilding them from the ring of pixels just
+// outside each one. Two samples are combined: the mean of eight taps around
+// the ring (a robust estimate of "what this area is", used at the centre where
+// no direction is meaningful) and the single tap directly outward along this
+// fragment's own radius (which carries whatever gradient runs across the spot,
+// so a sky that darkens toward the top keeps darkening across the patch). The
+// radial tap takes over quadratically toward the edge, where matching the
+// immediate neighbourhood is what stops the patch reading as a disc.
+//
+// Coordinates are aspect-corrected into width-fractions before any distance is
+// taken: uv is 0..1 on both axes, so a circle on the sensor is an ellipse in uv
+// and an uncorrected radius would heal a stretched oval on non-square images.
+//
+// textureLod, not texture: this runs inside non-uniform control flow, where
+// implicit derivatives (and therefore the LOD an ordinary texture() picks) are
+// undefined. The image has no mipmaps, so level 0 is the only correct choice
+// and asking for it explicitly is what makes that well-defined.
+vec3 healDust(vec2 uv, vec3 original) {
+  vec3 color = original;
+  for (int i = 0; i < MAX_DUST; i++) {
+    if (i >= uDustCount) break;
+
+    vec2 centre = uDustSpots[i].xy;
+    float radius = uDustSpots[i].z;
+    vec2 delta = uv - centre;
+    delta.y *= uDustAspect;
+    float dist = length(delta);
+    if (dist >= radius) continue;
+
+    float ringRadius = radius * 1.2;
+    vec3 ringMean = vec3(0.0);
+    for (int k = 0; k < 8; k++) {
+      float angle = float(k) * 0.7853981634; // 2π/8
+      vec2 offset = vec2(cos(angle), sin(angle)) * ringRadius;
+      offset.y /= uDustAspect;
+      ringMean += textureLod(uImage, centre + offset, 0.0).rgb;
+    }
+    ringMean /= 8.0;
+
+    vec2 dir = dist > 1.0e-6 ? delta / dist : vec2(1.0, 0.0);
+    vec2 radialOffset = dir * ringRadius;
+    radialOffset.y /= uDustAspect;
+    vec3 radial = textureLod(uImage, centre + radialOffset, 0.0).rgb;
+
+    float t = dist / radius;
+    vec3 filled = mix(ringMean, radial, t * t);
+    // Feather the outermost 15% back to the real pixels. The stored radius is
+    // padded past the spot's soft edge, so that band is already clean image —
+    // blending there hides the seam without giving any of the spot back.
+    color = mix(color, filled, 1.0 - smoothstep(0.85, 1.0, t));
+  }
+  return color;
+}
+
+/** The image as everything downstream should see it: dust already healed. */
+vec3 sampleImage(vec2 uv) {
+  return healDust(uv, textureLod(uImage, uv, 0.0).rgb);
 }
 
 // The decoded image is already sRGB gamma-encoded. Exposure stops are a
@@ -313,7 +378,7 @@ vec3 applySaturationVibrance(vec3 c, float saturation, float vibrance) {
 }
 
 void main() {
-  vec3 color = texture(uImage, vTexCoord).rgb;
+  vec3 color = sampleImage(vTexCoord);
 
   // Unconditional rather than gated behind `if (uSharpen > 0.0)`: a dynamic
   // branch wrapping this many dependent texture fetches is a known trouble
@@ -322,14 +387,17 @@ void main() {
   // since the contribution below already multiplies out to exactly zero at
   // uSharpen = 0.
   {
-    vec3 n  = texture(uImage, vTexCoord + vec2(0.0, -uTexelSize.y)).rgb;
-    vec3 s  = texture(uImage, vTexCoord + vec2(0.0,  uTexelSize.y)).rgb;
-    vec3 e  = texture(uImage, vTexCoord + vec2( uTexelSize.x, 0.0)).rgb;
-    vec3 w  = texture(uImage, vTexCoord + vec2(-uTexelSize.x, 0.0)).rgb;
-    vec3 ne = texture(uImage, vTexCoord + vec2( uTexelSize.x, -uTexelSize.y)).rgb;
-    vec3 nw = texture(uImage, vTexCoord + vec2(-uTexelSize.x, -uTexelSize.y)).rgb;
-    vec3 se = texture(uImage, vTexCoord + vec2( uTexelSize.x,  uTexelSize.y)).rgb;
-    vec3 sw = texture(uImage, vTexCoord + vec2(-uTexelSize.x,  uTexelSize.y)).rgb;
+    // Healed taps, not raw ones: sharpening a healed pixel against its
+    // un-healed neighbours would measure the very edge that was just removed
+    // and draw a bright ring back around every patched spot.
+    vec3 n  = sampleImage(vTexCoord + vec2(0.0, -uTexelSize.y));
+    vec3 s  = sampleImage(vTexCoord + vec2(0.0,  uTexelSize.y));
+    vec3 e  = sampleImage(vTexCoord + vec2( uTexelSize.x, 0.0));
+    vec3 w  = sampleImage(vTexCoord + vec2(-uTexelSize.x, 0.0));
+    vec3 ne = sampleImage(vTexCoord + vec2( uTexelSize.x, -uTexelSize.y));
+    vec3 nw = sampleImage(vTexCoord + vec2(-uTexelSize.x, -uTexelSize.y));
+    vec3 se = sampleImage(vTexCoord + vec2( uTexelSize.x,  uTexelSize.y));
+    vec3 sw = sampleImage(vTexCoord + vec2(-uTexelSize.x,  uTexelSize.y));
 
     // 3x3 Gaussian-like blur (center 4, edges 2, corners 1, /16) instead of a
     // plain 4-tap box average, for a more accurate detail estimate.
