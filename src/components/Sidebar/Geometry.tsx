@@ -4,7 +4,7 @@ import { Section } from './Section';
 import { RATIO_PRESETS, ratioLabel, RatioPreset, resolveLockedAspect, useCropTool } from '../../state/cropTool';
 import { computeAutoCropForRotation, fitAspectInRect, intersectCropRects, isFullFrame } from '../../lib/autoCrop';
 import { ControlGroup } from './ControlGroup';
-import { UI_COLORS } from '../../lib/palette';
+import { ACCENT_BORDER, ACCENT_WASH, UI_COLORS } from '../../lib/palette';
 import { CropRect } from '../../types';
 
 const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
@@ -147,9 +147,9 @@ export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenVa
                 }}
                 className="flex-1 flex items-center justify-center gap-1.5 text-xs border rounded py-1 disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{
-                  borderColor: active && !disabled ? UI_COLORS.accent : '#3f3f46',
+                  borderColor: active && !disabled ? ACCENT_BORDER : '#3f3f46',
                   color: active && !disabled ? UI_COLORS.accent : '#a1a1aa',
-                  backgroundColor: active && !disabled ? 'rgba(96,139,149,0.15)' : 'transparent',
+                  backgroundColor: active && !disabled ? ACCENT_WASH : 'transparent',
                 }}
               >
                 <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" aria-hidden="true">

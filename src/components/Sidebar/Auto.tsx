@@ -3,7 +3,7 @@ import { useEditParams } from '../../state/editParams';
 import { Section } from './Section';
 import { computeAutoLevels } from '../../lib/autoLevels';
 import { detectDustSpots } from '../../lib/dustSpots';
-import { UI_COLORS } from '../../lib/palette';
+import { ACCENT_BORDER, UI_COLORS } from '../../lib/palette';
 import { DecodedImage } from '../../types';
 
 interface Props {
@@ -95,7 +95,7 @@ export function Auto({ image, forceOpenSignal, forceOpenValue }: Props) {
         className="w-full text-xs border rounded py-1.5 hover:bg-neutral-800 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
         style={
           dustCount > 0
-            ? { borderColor: UI_COLORS.accent, color: UI_COLORS.accent }
+            ? { borderColor: ACCENT_BORDER, color: UI_COLORS.accent }
             : { borderColor: '#404040', color: '#d4d4d8' }
         }
       >

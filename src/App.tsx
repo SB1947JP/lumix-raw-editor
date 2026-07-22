@@ -8,7 +8,7 @@ import { Logo } from './components/Logo';
 import { decodePreview, friendlyDecodeError, isSupportedRawFile } from './lib/rawDecoder';
 import { computeImageRgbHistogram, HistogramData } from './lib/histogram';
 import { loadSession, saveSession, clearSession } from './lib/sessionStore';
-import { UI_COLORS } from './lib/palette';
+import { ACCENT_BORDER, UI_COLORS } from './lib/palette';
 import { useEditParams, useRenderParams } from './state/editParams';
 import { useCropTool } from './state/cropTool';
 import { useUiMode } from './state/uiMode';
@@ -220,7 +220,13 @@ export default function App() {
               <button
                 onClick={handleDeleteFile}
                 className="h-8 px-2.5 flex items-center justify-center text-xs rounded border font-medium hover:bg-neutral-900 whitespace-nowrap"
-                style={{ borderColor: UI_COLORS.danger, color: UI_COLORS.danger }}
+                // Drawn in the same neutral as Export beside it: the red made
+                // it the loudest thing in a window whose whole point is the
+                // photograph, and it was the last hue left in the chrome.
+                // Defensible because the action isn't destructive in the way
+                // the red implied — it forgets the *loaded* file and its saved
+                // session, and never touches the RAW on disk.
+                style={{ borderColor: ACCENT_BORDER, color: UI_COLORS.accent }}
               >
                 Delete file
               </button>

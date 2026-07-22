@@ -121,6 +121,16 @@ A running history of the important steps taken to build Sean's RAW Editor.
 - Split the editing panel with two horizontal rules and no more: one under the camera/exposure line, dividing what the file *is* from what you can do to it, and one above Undo / Reset all, which act on the whole edit rather than adjusting part of it. Deliberately not repeated between every section — the spaced small-caps headings already delimit those, and a rule above each would compete with them rather than add anything, turning a meaningful boundary into ruled paper
 - `DIAL MIXER` set in sentence case as `Dial Mixer`. It's a switch, not a section heading, and the uppercase styling had it shouting alongside the headings it sits between
 
+## Colour removed from the chrome entirely
+
+- Supersedes *Interface colour simplification* above. The two-colour system it landed on — one teal-green accent plus a red for destructive actions — was still one colour too many. The accent painted fifteen controls, and the loudest of them (Export JPEG, the Dial Mixer toggle) put a saturated green next to a photograph that already had colour of its own to say
+- `accent` is now a **brightness, not a hue** (`#e4e4e7`). Active and selected states are signalled the way a black-and-white print signals emphasis — contrast and weight — leaving the photograph as the only thing in the window carrying colour
+- Deliberately restrained rather than merely desaturated. A first pass at pure white read as a highlight shouting for attention, which is the same mistake the eight accents made, just in monochrome. Three separate strengths now do the work: `accent` for text (one step above a resting label, no more), `ACCENT_BORDER` at 40% for outlines (separates from the inactive border without ringing), `ACCENT_WASH` at 7% for the fill behind a live control
+- The Dial Mixer knob had to invert with its track: a pale knob on a pale track vanishes at exactly the moment the control is meant to read as active, so a lit track now carries a dark knob, and the track itself sits at `heading` rather than the near-white accent
+- **Delete file** dropped its red too, and is now drawn identically to Export JPEG beside it. Defensible because the action isn't destructive in the way the red implied — it forgets the *loaded* file and its saved session, and never touches the RAW on disk. Worth recording that it has no confirmation step, which the red was implicitly standing in for
+- `danger` stays in the vocabulary for exactly one thing: the map pin, where red is cartographic convention rather than a warning
+- What colour is left in the window: the photograph, the logo, the map pin, and the histogram's R/G/B channels — which are data, not decoration
+
 ## Verification discipline throughout
 
 Every change checked with `tsc` + production build, then functionally verified in-browser via pixel-level `gl.readPixels()` comparisons (saturation ratios, clipping counts, luma) rather than just visual inspection — and only pushed to `main`/deployed when explicitly requested.

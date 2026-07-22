@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLibrary } from '../../state/library';
-import { UI_COLORS } from '../../lib/palette';
+import { ACCENT_BORDER, UI_COLORS } from '../../lib/palette';
 
 /** Tag editor for one file. Keywords are stored locally and never written
  *  into the RAW itself — see lib/keywordStore.ts. */
@@ -25,7 +25,7 @@ export function KeywordEditor({ fileName }: { fileName: string }) {
             <span
               key={tag}
               className="inline-flex items-center gap-1 pl-1.5 pr-1 py-0.5 rounded text-[11px] border"
-              style={{ borderColor: 'rgba(96,139,149,0.5)', color: UI_COLORS.accent }}
+              style={{ borderColor: ACCENT_BORDER, color: UI_COLORS.accent }}
             >
               {tag}
               <button

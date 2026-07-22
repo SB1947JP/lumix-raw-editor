@@ -1,7 +1,7 @@
 import { DragEvent as ReactDragEvent, useEffect, useRef, useState } from 'react';
 import { allKeywords, filterItems, useLibrary } from '../../state/library';
 import { friendlyDecodeError, isSupportedRawFile, probeFile } from '../../lib/rawDecoder';
-import { UI_COLORS } from '../../lib/palette';
+import { ACCENT_BORDER, ACCENT_WASH, UI_COLORS } from '../../lib/palette';
 import { KeywordEditor } from './KeywordEditor';
 import { MapView } from './MapView';
 
@@ -188,8 +188,8 @@ export function FileBrowser() {
                     aria-pressed={on}
                     className="px-1.5 py-0.5 rounded text-[10px] border transition-colors"
                     style={{
-                      borderColor: on ? UI_COLORS.accent : '#3f3f46',
-                      backgroundColor: on ? 'rgba(96,139,149,0.18)' : 'transparent',
+                      borderColor: on ? ACCENT_BORDER : '#3f3f46',
+                      backgroundColor: on ? ACCENT_WASH : 'transparent',
                       color: on ? UI_COLORS.accent : '#a1a1aa',
                     }}
                   >
@@ -210,7 +210,7 @@ export function FileBrowser() {
                     className={`group w-full flex items-center gap-2 p-1 rounded border transition-colors ${
                       isSelected ? 'bg-neutral-800' : 'border-transparent hover:bg-neutral-800/60 hover:border-neutral-700'
                     }`}
-                    style={isSelected ? { borderColor: UI_COLORS.accent } : undefined}
+                    style={isSelected ? { borderColor: ACCENT_BORDER } : undefined}
                   >
                     <button
                       type="button"

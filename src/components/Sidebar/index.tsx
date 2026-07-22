@@ -3,7 +3,7 @@ import { useEditParams } from '../../state/editParams';
 import { DEFAULT_PANEL_WIDTH, useUiMode } from '../../state/uiMode';
 import { DecodedImage, RawMetadata } from '../../types';
 import { HistogramData } from '../../lib/histogram';
-import { UI_COLORS } from '../../lib/palette';
+import { ACCENT_BORDER, ACCENT_WASH, UI_COLORS } from '../../lib/palette';
 import { Histogram } from '../Histogram';
 import { FileBrowser } from '../FileBrowser';
 import { useLibrary } from '../../state/library';
@@ -167,8 +167,8 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         onClick={toggleControlStyle}
         className="w-full flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-md border transition-colors select-none"
         style={{
-          borderColor: dial ? UI_COLORS.accent : UI_COLORS.muted,
-          backgroundColor: dial ? 'rgba(96,139,149,0.15)' : 'transparent',
+          borderColor: dial ? ACCENT_BORDER : UI_COLORS.muted,
+          backgroundColor: dial ? ACCENT_WASH : 'transparent',
         }}
       >
         <span
@@ -183,10 +183,16 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         </span>
         <span
           className="relative w-10 h-5 rounded-full transition-colors shrink-0"
-          style={{ backgroundColor: dial ? UI_COLORS.accent : UI_COLORS.muted }}
+          style={{ backgroundColor: dial ? UI_COLORS.heading : UI_COLORS.muted }}
         >
+          {/* The knob inverts with the track. Now that "on" is a bright
+              neutral rather than a colour, a pale knob on a pale track would
+              disappear at exactly the moment the control is meant to read as
+              active — so on a lit track the knob goes dark. */}
           <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-neutral-100 transition-transform ${dial ? 'translate-x-5' : ''}`}
+            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform ${
+              dial ? 'translate-x-5 bg-neutral-900' : 'bg-neutral-100'
+            }`}
           />
         </span>
       </button>
