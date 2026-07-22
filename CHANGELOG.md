@@ -44,6 +44,8 @@ A running history of the important steps taken to build Sean's RAW Editor.
 ## Crop commit, look previews, resizable panel
 
 - **Return commits the crop**: the viewer drops everything outside the box and renders just the kept frame, and Return again reopens the crop box. A view state only — the crop rect is untouched and export always baked it in regardless. Verified the canvas goes 3012×2008 → 1506×2008 on a 3:4 portrait crop and back. Return is ignored while focus is in a text field, select or button, so it can't steal the key from a control
+- **Look presets preview on hover**. This meant replacing the native `<select>`: `<option>` elements can't receive hover events in any browser, so previewing by pointing at a stock is impossible without owning the list. The replacement expands inline rather than floating, which avoids being clipped by the panel's own scroll container
+- Previews render through a new `preview` layer in the params store that the canvas composites over the real values. Nothing is committed, no undo step is recorded, and export is unaffected — verified by readback: hovering Kodachrome shifts the render to RGB (178.7, 178.7, 153.7), leaving reverts to (162.9, 168.4, 150.4), and the committed params stay at 0 throughout
 
 ## Film emulation
 

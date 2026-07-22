@@ -9,7 +9,7 @@ import { decodePreview, friendlyDecodeError, isSupportedRawFile } from './lib/ra
 import { computeImageRgbHistogram, HistogramData } from './lib/histogram';
 import { loadSession, saveSession, clearSession } from './lib/sessionStore';
 import { UI_COLORS } from './lib/palette';
-import { useEditParams } from './state/editParams';
+import { useEditParams, useRenderParams } from './state/editParams';
 import { useCropTool } from './state/cropTool';
 import { useUiMode } from './state/uiMode';
 import { libraryIdFor, useLibrary } from './state/library';
@@ -30,6 +30,9 @@ export default function App() {
   const [histogram, setHistogram] = useState<HistogramData | null>(null);
   const [loadingFileName, setLoadingFileName] = useState('');
   const params = useEditParams((s) => s.params);
+  // The viewer shows hover previews; export must not — it has to write what
+  // the user actually committed, not whatever they were pointing at.
+  const renderParams = useRenderParams();
   const resetParams = useEditParams((s) => s.reset);
   const undo = useEditParams((s) => s.undo);
   const resetCropToolForNewImage = useCropTool((s) => s.resetForNewImage);
@@ -254,7 +257,7 @@ export default function App() {
             </div>
           )}
           {status === 'ready' && preview && (
-            <ImageViewer image={preview} params={params} onHistogram={handleHistogram} />
+            <ImageViewer image={preview} params={renderParams} onHistogram={handleHistogram} />
           )}
         </main>
         <Sidebar

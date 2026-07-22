@@ -1,6 +1,7 @@
 import { useEditParams } from '../../state/editParams';
 import { Section } from './Section';
 import { CurveEditor } from '../CurveEditor';
+import { LookPicker } from './LookPicker';
 import { FILM_STOCKS, matchFilmStock } from '../../lib/filmStocks';
 import { CURVE_PRESETS, matchCurvePreset, isIdentityCurve, normalizeCurve } from '../../lib/curve';
 import { DEFAULT_EDIT_PARAMS } from '../../types';
@@ -26,52 +27,26 @@ export function Look({ forceOpenSignal, forceOpenValue }: Props) {
       {/* One control instead of two dropdowns fighting over the tone curve: the
           Film group applies a full stock (colour + its curve), the Camera look
           / contrast group applies a curve only. */}
-      <div className="mb-3">
-        <select
-          value={matchedFilmStock ? `film:${matchedFilmStock.label}` : matchedCurve ? `curve:${matchedCurve.label}` : 'custom'}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v.startsWith('film:')) {
-              const preset = FILM_STOCKS.find((p) => p.label === v.slice(5));
-              if (!preset) return;
-              beginChange();
-              set('temperature', preset.temperature);
-              set('tint', preset.tint);
-              set('saturation', preset.saturation);
-              set('vibrance', preset.vibrance);
-              set('contrast', preset.contrast);
-              set('lumaCurve', preset.curve.map((p) => ({ ...p })));
-            } else if (v.startsWith('curve:')) {
-              const preset = CURVE_PRESETS.find((p) => p.label === v.slice(6));
-              if (!preset) return;
-              beginChange();
-              set('lumaCurve', preset.points.map((p) => ({ ...p })));
-            }
-          }}
-          title="A film stock (colour + its tone curve) or a camera-look / contrast curve"
-          className="w-full bg-neutral-950 border border-neutral-700 rounded text-xs text-neutral-300 py-1 px-2"
-        >
-          {!matchedFilmStock && !matchedCurve && (
-            <option value="custom" disabled>
-              Custom
-            </option>
-          )}
-          <optgroup label="Film">
-            {FILM_STOCKS.map((p) => (
-              <option key={p.label} value={`film:${p.label}`}>
-                {p.label}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Camera look / contrast">
-            {CURVE_PRESETS.map((p) => (
-              <option key={p.label} value={`curve:${p.label}`}>
-                {p.label}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-      </div>
+      <LookPicker
+        selectedLabel={matchedFilmStock?.label ?? matchedCurve?.label ?? null}
+        onPickFilm={(label) => {
+          const preset = FILM_STOCKS.find((p) => p.label === label);
+          if (!preset) return;
+          beginChange();
+          set('temperature', preset.temperature);
+          set('tint', preset.tint);
+          set('saturation', preset.saturation);
+          set('vibrance', preset.vibrance);
+          set('contrast', preset.contrast);
+          set('lumaCurve', preset.curve.map((p) => ({ ...p })));
+        }}
+        onPickCurve={(label) => {
+          const preset = CURVE_PRESETS.find((p) => p.label === label);
+          if (!preset) return;
+          beginChange();
+          set('lumaCurve', preset.points.map((p) => ({ ...p })));
+        }}
+      />
 
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs text-neutral-400">Tone Curve</div>
