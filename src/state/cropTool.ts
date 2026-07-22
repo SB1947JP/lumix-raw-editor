@@ -41,6 +41,12 @@ interface CropToolStore {
   // Once false, rotation changes only ever shrink the user's own crop to
   // stay inside that safe rectangle, never override it.
   autoRotationCrop: boolean;
+  /** True once the crop has been "committed" (Return key): the viewer then
+   *  shows only the kept area instead of the whole frame with a crop box over
+   *  it. Purely a preview state — the crop rect itself is unchanged, and
+   *  export has always baked the crop in regardless. */
+  cropApplied: boolean;
+  setCropApplied: (v: boolean) => void;
   setRatio: (r: RatioPreset) => void;
   setOrientation: (o: Orientation) => void;
   toggleOrientation: () => void;
@@ -54,13 +60,21 @@ export const useCropTool = create<CropToolStore>()(
       ratio: 'original',
       orientation: 'landscape',
       autoRotationCrop: true,
+      cropApplied: false,
+      setCropApplied: (cropApplied) => set({ cropApplied }),
       setRatio: (r) => set({ ratio: r }),
       setOrientation: (orientation) => set({ orientation }),
       toggleOrientation: () => set((s) => ({ orientation: s.orientation === 'landscape' ? 'portrait' : 'landscape' })),
       setAutoRotationCrop: (v) => set({ autoRotationCrop: v }),
-      resetForNewImage: () => set({ autoRotationCrop: true, ratio: 'original' }),
+      resetForNewImage: () => set({ autoRotationCrop: true, ratio: 'original', cropApplied: false }),
     }),
-    { name: 'lumix-crop-tool' },
+    {
+      name: 'lumix-crop-tool',
+      // cropApplied is a view state for the image currently open, not a
+      // preference — reloading into a committed crop with no visible crop box
+      // would look like the photo had simply been cut down.
+      partialize: (s) => ({ ratio: s.ratio, orientation: s.orientation, autoRotationCrop: s.autoRotationCrop }),
+    },
   ),
 );
 

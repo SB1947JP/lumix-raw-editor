@@ -33,7 +33,7 @@ function reshapeToRatio(crop: CropRect, lockedAspect: number, imageWidth: number
 
 export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenValue }: Props) {
   const { params, set, beginChange } = useEditParams();
-  const { ratio, orientation, autoRotationCrop, setRatio, setOrientation, setAutoRotationCrop } = useCropTool();
+  const { ratio, orientation, autoRotationCrop, cropApplied, setCropApplied, setRatio, setOrientation, setAutoRotationCrop } = useCropTool();
   const crop = params.crop ?? FULL_CROP;
   const cropEnabled = params.crop !== null;
   // Rotation/crop math needs the image's real aspect ratio — without a loaded
@@ -94,6 +94,9 @@ export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenVa
           onChange={(e) => {
             beginChange();
             setAutoRotationCrop(false);
+            // Turning the crop off must also drop the committed view, or the
+            // viewer would stay cut down with no crop box left to explain it.
+            setCropApplied(false);
             set('crop', e.target.checked ? { ...FULL_CROP } : null);
           }}
         />
@@ -166,6 +169,13 @@ export function Geometry({ imageWidth, imageHeight, forceOpenSignal, forceOpenVa
             );
           })}
         </div>
+      )}
+      {cropEnabled && (
+        <p className="text-[10px] leading-snug text-neutral-600">
+          {cropApplied
+            ? 'Showing the cropped frame · press Return to edit the crop again'
+            : 'Press Return to hide everything outside the crop'}
+        </p>
       )}
     </Section>
   );

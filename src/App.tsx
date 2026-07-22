@@ -45,10 +45,32 @@ export default function App() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // Never steal keys from a field the user is typing into — the keyword
+      // box and every slider's numeric input both rely on Return.
+      const el = e.target as HTMLElement | null;
+      // BUTTON is in here too: Return on a focused button must activate that
+      // button, which is what a keyboard user expects — stealing the key for
+      // the crop would break every control in the panel.
+      const typing =
+        !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(el.tagName));
+
       const isUndo = (e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z';
       if (isUndo) {
         e.preventDefault();
         undo();
+        return;
+      }
+      // Return commits the crop: the viewer drops the discarded area and shows
+      // just the kept frame. Pressing it again reopens the crop box, so it's a
+      // reversible preview rather than a destructive step (the crop rect is
+      // untouched either way, and export has always baked it in regardless).
+      if (e.key === 'Enter' && !typing) {
+        // Read through getState() so this listener needs no dependency on the
+        // crop rect and can stay registered for the life of the app.
+        if (!useEditParams.getState().params.crop) return;
+        e.preventDefault();
+        const cropTool = useCropTool.getState();
+        cropTool.setCropApplied(!cropTool.cropApplied);
       }
     }
     window.addEventListener('keydown', onKeyDown);

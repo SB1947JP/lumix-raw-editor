@@ -40,6 +40,14 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
   const ratio = useCropTool((s) => s.ratio);
   const orientation = useCropTool((s) => s.orientation);
   const setAutoRotationCrop = useCropTool((s) => s.setAutoRotationCrop);
+  const cropApplied = useCropTool((s) => s.cropApplied);
+
+  // With the crop committed, the canvas is rendered at the crop's own size, so
+  // every measurement below has to follow suit — laying a cropped canvas out
+  // at the full frame's dimensions would just stretch it back out again.
+  const showCropped = cropApplied && params.crop !== null;
+  const viewWidth = showCropped ? image.width * params.crop!.width : image.width;
+  const viewHeight = showCropped ? image.height * params.crop!.height : image.height;
 
   // Reset the view whenever a new image is loaded.
   useEffect(() => {
@@ -54,17 +62,17 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
       const ch = container.clientHeight;
       if (cw === 0 || ch === 0) return;
       setContainerSize({ width: cw, height: ch });
-      setFitScale(Math.min(cw / image.width, ch / image.height, 1));
+      setFitScale(Math.min(cw / viewWidth, ch / viewHeight, 1));
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(container);
     return () => ro.disconnect();
-  }, [image.width, image.height]);
+  }, [viewWidth, viewHeight]);
 
   const scale = zoomMode.kind === 'fit' ? fitScale : zoomMode.scale;
-  const cssWidth = image.width * scale;
-  const cssHeight = image.height * scale;
+  const cssWidth = viewWidth * scale;
+  const cssHeight = viewHeight * scale;
   // Center each axis independently whenever that axis's content fits without
   // scrolling — a centered flex axis can't be scrolled into its "negative"
   // overflow region, so once an axis overflows it must be top/left anchored.
@@ -175,9 +183,9 @@ export function ImageViewer({ image, params, onHistogram }: Props) {
             params={params}
             onHistogram={onHistogram}
             style={{ width: '100%', height: '100%' }}
-            applyCrop={false}
+            applyCrop={showCropped}
           />
-          {params.crop && (
+          {params.crop && !showCropped && (
             <CropOverlay
               crop={params.crop}
               imageWidth={image.width}

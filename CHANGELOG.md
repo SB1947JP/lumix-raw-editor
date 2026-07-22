@@ -41,6 +41,10 @@ A running history of the important steps taken to build Sean's RAW Editor.
 - Fixed the "choose location" dialog silently disappearing on export. A full-res decode takes ~13s, far beyond the browser's ~5s transient user-activation window, so by the time the anchor download fired the tab no longer counted as user-initiated and Chromium reclassified it as an *automatic* download — skipping the save prompt. Measured: 13,508 ms gap with `navigator.userActivation.isActive === false`. Fixed by opening `showSaveFilePicker()` synchronously in the click handler (now 1 ms, activation still valid) and writing the decoded bytes to the chosen handle afterwards. Same root cause as the iOS share failure already documented in that file. Safari/Firefox keep the anchor path, which also stopped revoking the blob URL synchronously after `click()` — that race can cancel a download before the browser has read the blob
 - Renamed app to "Sean's RAW Editor"; trimmed base font size
 
+## Crop commit, look previews, resizable panel
+
+- **Return commits the crop**: the viewer drops everything outside the box and renders just the kept frame, and Return again reopens the crop box. A view state only — the crop rect is untouched and export always baked it in regardless. Verified the canvas goes 3012×2008 → 1506×2008 on a 3:4 portrait crop and back. Return is ignored while focus is in a text field, select or button, so it can't steal the key from a control
+
 ## Film emulation
 
 - Added a "Film emulation" dropdown (renamed from a generic colour dropdown) simulating late-90s stocks — Kodachrome 64, Kodak Gold 200, Portra 400, Fuji Superia 400, Provia 100F/400X, Ektachrome E100, Ektachrome 320T-in-daylight
