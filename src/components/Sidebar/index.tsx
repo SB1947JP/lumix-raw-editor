@@ -154,6 +154,10 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         </div>
       )}
 
+      {/* Divides what the file *is* (histogram, camera, exposure) from what you
+          can do to it — everything below this line is a control. */}
+      <hr className="mb-4 border-neutral-800" />
+
       {/* View options — presentation, not edits. Toggles all controls between
           classic sliders and a Pioneer-DJ-mixer-style panel of rotary dials. */}
       <button
@@ -168,14 +172,14 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
         }}
       >
         <span
-          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide"
+          className="flex items-center gap-2 text-xs font-semibold tracking-wide"
           style={{ color: dial ? UI_COLORS.accent : '#d4d4d8' }}
         >
           <svg viewBox="0 0 16 16" className="w-4 h-4" aria-hidden="true">
             <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
             <line x1="8" y1="8" x2="8" y2="3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          Dial mixer
+          Dial Mixer
         </span>
         <span
           className="relative w-10 h-5 rounded-full transition-colors shrink-0"
@@ -238,6 +242,13 @@ export function Sidebar({ metadata, histogram, originalHistogram, image }: Props
           <option value="classic">Classic</option>
         </select>
       </div>
+
+      {/* Second and last rule in the panel, marking the same kind of boundary
+          as the first: these two act on the whole edit rather than adjusting
+          one part of it. Deliberately not repeated between every section —
+          the headings already delimit those, and a rule above each one would
+          compete with them instead of adding anything. */}
+      <hr className="mt-5 mb-3 border-neutral-800" />
 
       <div className="flex gap-2">
         <button

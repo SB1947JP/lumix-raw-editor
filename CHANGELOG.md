@@ -115,6 +115,11 @@ A running history of the important steps taken to build Sean's RAW Editor.
 - Verified both ways: on a synthetic frame carrying five true motes plus four decoy classes (a dark bird, a coloured leaf, a soft cloud wisp, dark tufts in textured grass) it finds 5/5 and rejects all four; on the real photo it now finds nothing, where the same code path previously altered 0.43% of all pixels
 - Moved Auto Levels and Dust Removal into a new **Auto** section above Basic — both inspect the photograph and write a result into the controls below, which makes them a different kind of thing from the sliders they were sitting among
 
+## Editing panel structure
+
+- Split the editing panel with two horizontal rules and no more: one under the camera/exposure line, dividing what the file *is* from what you can do to it, and one above Undo / Reset all, which act on the whole edit rather than adjusting part of it. Deliberately not repeated between every section — the spaced small-caps headings already delimit those, and a rule above each would compete with them rather than add anything, turning a meaningful boundary into ruled paper
+- `DIAL MIXER` set in sentence case as `Dial Mixer`. It's a switch, not a section heading, and the uppercase styling had it shouting alongside the headings it sits between
+
 ## Verification discipline throughout
 
 Every change checked with `tsc` + production build, then functionally verified in-browser via pixel-level `gl.readPixels()` comparisons (saturation ratios, clipping counts, luma) rather than just visual inspection — and only pushed to `main`/deployed when explicitly requested.
