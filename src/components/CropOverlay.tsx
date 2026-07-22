@@ -66,7 +66,12 @@ export function CropOverlay({ crop, imageWidth, imageHeight, lockedAspect, onCha
           top: `${crop.y * 100}%`,
           width: `${crop.width * 100}%`,
           height: `${crop.height * 100}%`,
-          boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)',
+          // The scrim covering everything *outside* the crop, drawn as one huge
+          // box-shadow spread rather than four positioned panels. At 0.8 it
+          // removes about half the light the old 0.6 still let through, so the
+          // discarded area reads as clearly secondary while staying legible
+          // enough to frame against when dragging the box around.
+          boxShadow: '0 0 0 9999px rgba(0,0,0,0.8)',
         }}
         onPointerDown={startDrag('move')}
       >

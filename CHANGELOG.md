@@ -32,7 +32,7 @@ A running history of the important steps taken to build Sean's RAW Editor.
 ## UI/UX features
 
 - Undo, double-click-to-reset sliders, zoom controls, double-click-to-recentre image + pan/hand tool
-- Interactive crop box overlay with aspect-ratio presets, default now locks to "Original" ratio
+- Interactive crop box overlay with aspect-ratio presets, default now locks to "Original" ratio; the scrim over the discarded area later darkened from 0.6 to 0.8 so the kept crop reads as clearly primary
 - Auto Levels button with before/after histogram
 - Redesigned histogram to a single toggleable before/after box, later upgraded to per-channel **RGB histogram** with a 0–255 scale
 - Japanese-palette color-coded section titles, collapsible sidebar panels
