@@ -51,9 +51,11 @@ export function Histogram({ before, after }: Props) {
 
   return (
     <div>
-      {/* No heading and no noun on the button: the chart sits directly beneath
-          and is unmistakable, so naming it twice in one narrow row just cost
-          space at the panel's minimum width. */}
+      {/* No heading, and while it's open the button drops the noun too: the
+          chart sits directly beneath and is unmistakable, so naming it twice in
+          one narrow row just cost space at the panel's minimum width. Once
+          hidden there's nothing beneath it, so the noun comes back — a bare
+          "Show" wouldn't say show *what*. */}
       <div className="flex items-center justify-end mb-1">
         <div className="flex items-center gap-2">
           <button
@@ -61,7 +63,7 @@ export function Histogram({ before, after }: Props) {
             aria-label={`${visible ? 'Hide' : 'Show'} histogram`}
             className="text-[10px] uppercase tracking-wide whitespace-nowrap text-neutral-500 hover:text-neutral-300"
           >
-            {visible ? 'Hide' : 'Show'}
+            {visible ? 'Hide' : 'Show Histogram'}
           </button>
         </div>
       </div>

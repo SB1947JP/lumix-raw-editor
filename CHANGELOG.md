@@ -155,6 +155,10 @@ A running history of the important steps taken to build Sean's RAW Editor.
 - The button that flips the editing panel to the left or right of the window moved out of the panel and up into the header, next to Full screen. Which side the panel sits on is a property of the whole interface layout — like the skin and fullscreen controls that already live there — not of any one section inside the panel
 - It's a self-contained `PanelSideButton` mirroring `FullscreenButton`'s size, border and icon, and because the header carries `data-retro-chrome` it inherits the 1-Bit skin for free. Desktop only (`hidden sm:flex`): on the mobile layout the panel stacks below the photo, where left/right has no meaning. With it gone, the panel's "Hide/Show All" button reclaims the full row width
 
+## "Show Histogram" when the histogram is hidden
+
+- The histogram's Hide/Show button dropped the noun to save space in a narrow row — safe while the chart sits right beneath it, but once hidden there's nothing there and a bare "Show" doesn't say show *what*. It now reads "Show Histogram" in the hidden state and stays "Hide" when open; the aria-label keeps the concise "Show histogram" throughout
+
 ## Verification discipline throughout
 
 Every change checked with `tsc` + production build, then functionally verified in-browser via pixel-level `gl.readPixels()` comparisons (saturation ratios, clipping counts, luma) rather than just visual inspection — and only pushed to `main`/deployed when explicitly requested.
