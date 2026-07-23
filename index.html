@@ -6,6 +6,15 @@
          from fighting with the app's own zoom controls on the image canvas. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- PWA: installable on desktop (Chrome/Edge) and iPad (Add to Home Screen).
+         The service worker is registered from main.tsx in production only. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="RAW Editor" />
     <!--
       This app opens people's private photographs and does everything to them
       in the browser, so the policy below is deliberately tight: it bounds what

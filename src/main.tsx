@@ -19,3 +19,18 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+// Register the service worker so the app is installable and works offline.
+// Production only — a worker aggressively caching in dev would serve stale
+// modules and fight HMR. The path/scope carry the deploy base (`/seans-raw-
+// editor/`), so the worker controls exactly the app's own subdirectory.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
+      .catch(() => {
+        // A failed registration just means no offline/install support — the app
+        // still runs normally, so there's nothing to surface to the user.
+      });
+  });
+}
